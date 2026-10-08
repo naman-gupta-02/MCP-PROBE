@@ -1,0 +1,60 @@
+{
+ "held_out_categories": [
+  "Credential Leakage",
+  "Instruction Tampering",
+  "Financial Loss"
+ ],
+ "server_split": {
+  "train": [
+   "12306-mcp",
+   "AWSKnowledgeBase",
+   "AdFin",
+   "AlphaVantage",
+   "AmapMap",
+   "Apify",
+   "DumplingAI",
+   "E2B",
+   "Email",
+   "Everything",
+   "FileSystem",
+   "Flomo",
+   "Git",
+   "GitHub",
+   "Google Maps",
+   "GoogleDrive",
+   "Gyazo",
+   "HyperBrowser",
+   "Memory",
+   "OP.GG",
+   "Prisma",
+   "Puppeteer",
+   "QuickChart",
+   "Redis",
+   "Sentry",
+   "Sequential Thinking",
+   "Slack",
+   "Tavily",
+   "gNucleus Text to CAD",
+   "mcp-simple-arxiv"
+  ],
+  "val": [
+   "ClickHouse",
+   "Codacy",
+   "Commander",
+   "EverArt",
+   "KeywordsPeopleUse",
+   "wechat"
+  ],
+  "test": [
+   "AgentQL",
+   "BaiduMap",
+   "BraveSearch",
+   "Claude Post",
+   "DoDo Payments",
+   "Fetch",
+   "Financial Dataset",
+   "GitLab",
+   "SQLite"
+  ]
+ }
+}

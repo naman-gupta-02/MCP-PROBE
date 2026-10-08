@@ -1,0 +1,14 @@
+[project]
+name = "mcp-probe"
+version = "0.1.0"
+description = "Team 12 (CSCI 544): do MCP tool-poisoning detectors generalize?"
+readme = "README.md"
+requires-python = ">=3.11,<3.12"
+dependencies = [
+    "pyyaml",
+    "pytest",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
