@@ -1,7 +1,7 @@
 #!/bin/bash --login
 # One-time MCP-Guard setup on USC CARC Discovery (CPU node, no GPU needed).
 #   - clones this repo's mcp-guard branch into the team dir (or updates it)
-#   - uv env + MCP-Guard extras, and a separate vLLM env for Stage III models
+#   - uv env + MCP-Guard extras (and, with INSTALL_VLLM=1, a separate vLLM env for Stage III)
 #   - MCPTox at the pinned commit + processed splits
 #   - pre-downloads the MCP-Guard checkpoint and BERT tokenizer
 # Submit from a login node:  sbatch detectors/mcp_guard/carc/setup.slurm
@@ -45,8 +45,9 @@ uv run python scripts/build_splits.py
 
 uv run python -c "from detectors.mcp_guard.stage2 import NeuralStage; NeuralStage(device='cpu'); print('stage2 ok')"
 
-# Separate env for the vLLM server: vLLM pins its own torch.
-if [ ! -x "$GROUP/envs/vllm/bin/vllm" ]; then
+# Separate env for the vLLM server (Stage III with open models); opt in with INSTALL_VLLM=1.
+# vLLM pins its own torch, so it gets its own venv.
+if [ "${INSTALL_VLLM:-0}" = "1" ] && [ ! -x "$GROUP/envs/vllm/bin/vllm" ]; then
   uv venv --python 3.11 "$GROUP/envs/vllm"
   uv pip install --python "$GROUP/envs/vllm/bin/python" vllm
 fi
