@@ -83,6 +83,26 @@ Stage I and Stage II match the paper's internal-stage rows to the decimal, so th
 
 On `tune`, Stage I alone blocks 546/759 poisoned cases (paper: 38.9% recall in-domain), mostly via `shell_injection` (342) and `important_tag` (251). That points to template artifacts in MCPTox that the regexes match, which matters for the adaptive-attacker experiment. Of the 39 false positives on `tune`, 30 come from Stage II and 9 from Stage I. The T_u sweep barely moves F1 (96.4–97.2 over 0.05–0.95) because Stage II scores are nearly binary. Stage III is not in these numbers yet.
 
+## Fine-tuned Stage II (extra condition, not yet run)
+
+Frozen MCP-Guard stays the main "existing detector" result. As an extra condition we fine-tune its Stage II on MCPTox `tune` and pick the epoch on `val`; `test` is never loaded during training. This still needs a team decision recorded in DECISIONS.md, because the shared CLAUDE.md still says we train no models.
+
+| Option | Choices |
+|---|---|
+| `--init` | `mcpguard`: GenTelLab's released weights + bert-base-uncased tokenizer. `e5base`: `intfloat/multilingual-e5-base@d128750` + its own tokenizer, fresh head (the paper's recipe, Sec. 3.2). |
+| `--scope` | `full`: all 278M weights (lr 2e-5, 5 epochs). `head`: encoder frozen, 0.6M head weights (lr 1e-3, 10 epochs). |
+| Loss | Cross-entropy, inverse-frequency class weights (`tune` is 759 poisoned : 223 clean after dropping 17 empty descriptions). |
+| Selection | Best epoch by val F1 of Stage II alone at 0.5 (`--select-metric balanced_accuracy` also available). |
+
+```bash
+uv run python -m detectors.mcp_guard.train --init mcpguard --scope full --seed 0
+uv run python -m detectors.mcp_guard.evaluate --split val --stages s1,s2 --s2-path results/mcp_guard/finetune/mcpguard_full_seed0
+sbatch detectors/mcp_guard/carc/train_sweep.slurm        # CARC: 2 inits x 2 scopes x 3 seeds + frozen reference
+uv run python -m detectors.mcp_guard.summarize_finetune  # mean ± std table
+```
+
+Each run saves the best checkpoint (~1.1 GB, HF format) plus `train_meta.json` (settings, per-epoch val metrics, data counts, git commit). The `finetuned` Stage II loader reads that directory: `stage2: {loader: finetuned, path: ...}` in the config.
+
 ## Differences between the paper and the released code
 
 From running the code (verified):

@@ -11,6 +11,8 @@ Two loaders:
 - loader="hf": the same weights mapped onto transformers'
   XLMRobertaForSequenceClassification, which batches and runs on GPU cleanly.
   `verify_loaders()` checks both give the same logits before we rely on it.
+- loader="finetuned": a directory written by detectors/mcp_guard/train.py
+  (our MCPTox fine-tunes); model and tokenizer both come from `path`.
 
 Two tokenizers:
 - tokenizer="bert" (default): bert-base-uncased, which upstream's
@@ -26,8 +28,10 @@ Score = softmax(logits)[1] = P(malicious), max_length 128 as upstream.
 
 from __future__ import annotations
 
+import hashlib
 import logging
 import re
+from pathlib import Path
 
 import torch
 
@@ -88,19 +92,33 @@ class NeuralStage:
         device: str = "auto",
         batch_size: int = 32,
         revision: str = HF_REVISION,
+        path: str | None = None,
     ):
-        if loader not in ("hf", "onnx2pytorch"):
-            raise ValueError("loader must be 'hf' or 'onnx2pytorch'")
+        if loader not in ("hf", "onnx2pytorch", "finetuned"):
+            raise ValueError("loader must be 'hf', 'onnx2pytorch' or 'finetuned'")
         if tokenizer not in ("bert", "checkpoint_xlmr"):
             raise ValueError("tokenizer must be 'bert' or 'checkpoint_xlmr'")
         self.loader = loader
         self.tokenizer_name = tokenizer
         self.revision = revision
-        self.batch_size = batch_size if loader == "hf" else 1  # converted graph: run one at a time
+        self.batch_size = batch_size if loader != "onnx2pytorch" else 1  # converted graph: one at a time
         self.device = pick_device(device)
-        self.ckpt = checkpoint_dir(revision)
 
         from transformers import AutoTokenizer
+        if loader == "finetuned":
+            if not path:
+                raise ValueError("loader='finetuned' needs stage2.path")
+            from transformers import AutoModelForSequenceClassification
+            self.path = str(Path(path).resolve())
+            meta = Path(self.path) / "train_meta.json"
+            self._run_id = hashlib.sha256(meta.read_bytes()).hexdigest()[:12] if meta.exists() else "nometa"
+            self.tokenizer_name = "saved"
+            self.tokenizer = AutoTokenizer.from_pretrained(self.path)
+            self.model = AutoModelForSequenceClassification.from_pretrained(self.path)
+            self.model.to(self.device).eval()
+            return
+
+        self.ckpt = checkpoint_dir(revision)
         if tokenizer == "bert":
             self.tokenizer = AutoTokenizer.from_pretrained(BERT_TOKENIZER[0], revision=BERT_TOKENIZER[1])
         else:
@@ -110,6 +128,8 @@ class NeuralStage:
 
     @property
     def cache_tag(self) -> str:
+        if self.loader == "finetuned":
+            return f"s2|finetuned|{self.path}|{self._run_id}|len={MAX_LENGTH}"
         # Both loaders compute the same function once verified; the tokenizer changes the inputs.
         return f"s2|{HF_REPO}@{self.revision}|tok={self.tokenizer_name}|len={MAX_LENGTH}"
 

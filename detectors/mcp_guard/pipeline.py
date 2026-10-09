@@ -92,9 +92,10 @@ class MCPGuard:
     @classmethod
     def from_config(cls, path: str | Path = DEFAULT_CONFIG, **overrides) -> "MCPGuard":
         cfg = yaml.safe_load(Path(path).read_text(encoding="utf-8"))
-        s3_over = overrides.pop("stage3", None) or {}
+        nested = {k: overrides.pop(k, None) or {} for k in ("stage2", "stage3")}
         cfg.update({k: v for k, v in overrides.items() if v is not None})
-        cfg["stage3"] = {**(cfg.get("stage3") or {}), **{k: v for k, v in s3_over.items() if v is not None}}
+        for k, over in nested.items():
+            cfg[k] = {**(cfg.get(k) or {}), **{kk: vv for kk, vv in over.items() if vv is not None}}
         stages = tuple(cfg.get("stages", ["s1", "s2", "s3"]))
 
         s1 = PatternStage(cfg.get("stage1", {}).get("detectors")) if "s1" in stages else None

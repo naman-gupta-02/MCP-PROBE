@@ -69,6 +69,7 @@ def main() -> None:
     ap.add_argument("--s3-model", help="override stage3.model (e.g. a vLLM-served model name)")
     ap.add_argument("--s3-base-url", help="override stage3.base_url (e.g. http://localhost:8000/v1)")
     ap.add_argument("--s3-prompt", choices=["upstream", "paper"])
+    ap.add_argument("--s2-path", help="use a fine-tuned Stage II from train.py (directory)")
     args = ap.parse_args()
 
     try:
@@ -85,6 +86,7 @@ def main() -> None:
     guard = MCPGuard.from_config(
         args.config, mode=args.mode, stages=stages, tu=args.tu,
         stage3={"model": args.s3_model, "base_url": args.s3_base_url, "prompt": args.s3_prompt},
+        stage2={"loader": "finetuned", "path": args.s2_path} if args.s2_path else None,
     )
     run = f"{args.split}_{guard.mode}_{'-'.join(guard.stages)}" + (f"_{args.tag}" if args.tag else "")
     out_dir = ROOT / "results" / "mcp_guard" / run
