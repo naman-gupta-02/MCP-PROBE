@@ -25,7 +25,9 @@ export UV_CACHE_DIR=/scratch1/$USER/.cache/uv
 export HF_HOME=/scratch1/$USER/.cache/huggingface
 export PATH=$HOME/.local/bin:$PATH
 cd "$REPO"
-nvidia-smi --query-gpu=name,memory.total --format=csv
+nvidia-smi --query-gpu=name,memory.total,driver_version --format=csv
+# Fail fast instead of silently training on CPU if torch can't see the GPU (e.g. driver too old).
+uv run python -c "import torch, sys; print('torch', torch.__version__, 'cuda', torch.version.cuda, 'available', torch.cuda.is_available()); sys.exit(0 if torch.cuda.is_available() else 1)"
 
 # Frozen MCP-Guard reference on the same splits.
 for SPLIT in tune val; do
