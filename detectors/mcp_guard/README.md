@@ -97,7 +97,7 @@ Frozen MCP-Guard stays the main "existing detector" result. As an extra conditio
 ```bash
 uv run python -m detectors.mcp_guard.train --init mcpguard --scope full --seed 0
 uv run python -m detectors.mcp_guard.evaluate --split val --stages s1,s2 --s2-path results/mcp_guard/finetune/mcpguard_full_seed0
-sbatch detectors/mcp_guard/carc/train_sweep.slurm        # CARC: 2 inits x 2 scopes x 3 seeds + frozen reference
+sbatch detectors/mcp_guard/carc/train_sweep.slurm        # CARC: 2 inits x 2 scopes x 5 seeds + frozen reference
 uv run python -m detectors.mcp_guard.summarize_finetune  # mean ± std table
 ```
 

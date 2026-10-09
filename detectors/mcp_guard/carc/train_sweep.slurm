@@ -10,7 +10,7 @@
 #SBATCH --gres=gpu:a40:1
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=48G
-#SBATCH --time=03:00:00
+#SBATCH --time=05:00:00
 #SBATCH --output=/project2/xiangren_1987/group_12/logs/%x-%j.out
 
 set -euo pipefail
@@ -19,7 +19,7 @@ REPO=$GROUP/MCP-PROBE
 CKPT_ROOT=${CKPT_ROOT:-$GROUP/checkpoints/mcp_guard}
 INITS=${INITS:-"mcpguard e5base"}
 SCOPES=${SCOPES:-"full head"}
-SEEDS=${SEEDS:-"0 1 2"}
+SEEDS=${SEEDS:-"0 1 2 3 4"}
 
 export UV_CACHE_DIR=/scratch1/$USER/.cache/uv
 export HF_HOME=/scratch1/$USER/.cache/huggingface
