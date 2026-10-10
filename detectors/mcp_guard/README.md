@@ -83,9 +83,9 @@ Stage I and Stage II match the paper's internal-stage rows to the decimal, so th
 
 On `tune`, Stage I alone blocks 546/759 poisoned cases (paper: 38.9% recall in-domain), mostly via `shell_injection` (342) and `important_tag` (251). That points to template artifacts in MCPTox that the regexes match, which matters for the adaptive-attacker experiment. Of the 39 false positives on `tune`, 30 come from Stage II and 9 from Stage I. The T_u sweep barely moves F1 (96.4–97.2 over 0.05–0.95) because Stage II scores are nearly binary. Stage III is not in these numbers yet.
 
-## Fine-tuned Stage II (extra condition, not yet run)
+## Fine-tuned Stage II (extra condition)
 
-Frozen MCP-Guard stays the main "existing detector" result. As an extra condition we fine-tune its Stage II on MCPTox `tune` and pick the epoch on `val`; `test` is never loaded during training. This still needs a team decision recorded in DECISIONS.md, because the shared CLAUDE.md still says we train no models.
+Frozen MCP-Guard stays the main "existing detector" result. As an extra condition we fine-tune its Stage II on MCPTox `tune` and pick the epoch on `val`; `test` is never loaded during training. Only the description text is used as input (first 128 tokens); Stage I rules are not changed.
 
 | Option | Choices |
 |---|---|
@@ -102,6 +102,36 @@ uv run python -m detectors.mcp_guard.summarize_finetune  # mean ± std table
 ```
 
 Each run saves the best checkpoint (~1.1 GB, HF format) plus `train_meta.json` (settings, per-epoch val metrics, data counts, git commit). The `finetuned` Stage II loader reads that directory: `stage2: {loader: finetuned, path: ...}` in the config.
+
+### Results (CARC job 12848251, one A40, 2026-10-08; 20 runs in 21 min)
+
+Data: `tune` 982 descriptions used for training (759 poisoned / 223 clean; 30 servers), `val` 220 (171 / 49; 6 other servers) for epoch selection only.
+
+Full cascade, Stage I+II, paper mode, T_u = 0.45, on `val` (mean ± std over 5 seeds):
+
+| Condition | Precision | Recall | F1 | FPR on clean |
+|---|---:|---:|---:|---:|
+| Frozen MCP-Guard | 91.4 | 100.0 | 95.5 | 32.7 |
+| E5-base, full | 93.3 ± 0.2 | 100.0 | 96.6 ± 0.1 | 24.9 ± 0.9 |
+| E5-base, head only | 92.0 ± 0.4 | 100.0 | 95.9 ± 0.2 | 30.2 ± 1.7 |
+| MCP-Guard weights, full | 91.9 ± 0.5 | 100.0 | 95.8 ± 0.3 | 30.6 ± 2.0 |
+| MCP-Guard weights, head only | 91.3 ± 0.2 | 100.0 | 95.5 ± 0.1 | 33.1 ± 0.9 |
+
+Stage II alone on `val` (threshold 0.5, mean over seeds):
+
+| Condition | F1 before → after | FPR before → after |
+|---|---|---|
+| E5-base, full | 55.4 → 99.8 | 54.7 → 1.2 |
+| E5-base, head only | 55.4 → 97.8 | 54.7 → 12.7 |
+| MCP-Guard weights, full | 95.5 → 96.6 | 30.6 → 24.5 |
+| MCP-Guard weights, head only | 95.5 → 95.5 | 30.6 → 30.6 |
+
+What this shows and what it doesn't:
+- **Stage I sets the false-positive floor.** 12 of the 49 clean `val` tools are blocked by Stage I (`sensitive_file` 11, `shadow_hijack` 7, `sql_injection` 2; some hit several rules), so no Stage II change can bring cascade FPR below ~24.5%. The best fine-tune removes all Stage II false positives.
+- **E5-base fine-tuned fully fits MCPTox almost perfectly; MCP-Guard's own weights barely move.**
+- **Caveats.** `val` chose the epoch, so its numbers are optimistic; it has only 49 clean tools (1 tool ≈ 2 FPR points) and contains no held-out categories. Clean descriptions are much shorter than poisoned ones (median 14 vs 60 BERT tokens), and many poisoned ones share template wording (`<IMPORTANT>`, "you MUST FIRST call"), so a fine-tuned model may be learning length or template rather than intent; held-out categories in `test` and the adaptive attacker are the real check. 39/759 poisoned and 20/223 clean `tune` descriptions are longer than 128 tokens and get truncated. On `tune` itself fine-tuned FPR drops to ~4–5% vs ~25% on `val`, i.e. some overfitting.
+
+Checkpoints: `/project2/xiangren_1987/group_12/checkpoints/mcp_guard/<init>_<scope>_seed<k>/` on CARC (21 GB).
 
 ## Differences between the paper and the released code
 
