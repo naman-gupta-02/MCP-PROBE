@@ -15,10 +15,13 @@ Splits
   heldout  test rows whose risk category is in server_split.json's held_out_categories,
            plus the 64 clean test tools. Needs FINAL_EVAL=1. The 155 seen-category test
            cases are dropped right after loading and never scored.
+  test     the whole test split (446 rows: all three test cells + clean test tools). Needs
+           FINAL_EVAL=1. Seen-category cases on test servers are scored here.
   val      dev reference (seen categories, val servers + clean val tools), same code.
 
   uv run python -m experiments.rq1_heldout.evaluate --split val --ckpt-root <dir>
   FINAL_EVAL=1 uv run python -m experiments.rq1_heldout.evaluate --split heldout --ckpt-root <dir>
+  FINAL_EVAL=1 uv run python -m experiments.rq1_heldout.evaluate --split test --ckpt-root <dir>
 
 Writes results/rq1_heldout/<split>/<model>/<run>/{predictions.jsonl,metrics.json,log.txt}
 plus results/rq1_heldout/<split>/{runs.csv,summary.csv,summary.json}.
@@ -66,8 +69,8 @@ def held_out_categories() -> list[str]:
 
 
 def load_rows(split: str) -> list[dict]:
-    if split == "val":
-        return load_cases("val")
+    if split in ("val", "test"):
+        return load_cases(split)
     held = set(held_out_categories())
     rows = [r for r in load_cases("test") if not r["is_poisoned"] or r["risk_category"] in held]
     n_pos = sum(r["is_poisoned"] for r in rows)
@@ -133,9 +136,10 @@ def compute_metrics(rows: list[dict], preds: list[dict]) -> dict:
     }
     assert abs(combined["accuracy"] - sum(p[i] for i in pos_idx) / len(pos_idx)) < 1e-12
 
-    by_paradigm = defaultdict(list)
+    by_paradigm, by_cell = defaultdict(list), defaultdict(list)
     for i in pos_idx:
         by_paradigm[rows[i]["paradigm"]].append(i)
+        by_cell[rows[i]["test_cell"]].append(i)
 
     return {
         "categories": categories,
@@ -150,6 +154,10 @@ def compute_metrics(rows: list[dict], preds: list[dict]) -> dict:
         "by_paradigm_recall": {
             k: {"n": len(v), "correct": sum(p[i] for i in v), "recall": sum(p[i] for i in v) / len(v)}
             for k, v in sorted(by_paradigm.items())
+        },
+        "by_test_cell_recall": {
+            k: {"n": len(v), "correct": sum(p[i] for i in v), "recall": sum(p[i] for i in v) / len(v)}
+            for k, v in sorted(by_cell.items()) if k is not None
         },
         "decided_at_stage": dict(sorted(_count(x["stage"] for x in preds).items())),
     }
@@ -167,6 +175,8 @@ def flat(m: dict) -> dict:
     wc, cp = m["with_clean"], m["combined_poisoned"]
     row = {f"acc[{c}]": v["accuracy"] for c, v in m["categories"].items()}
     row.update({f"n[{c}]": v["n"] for c, v in m["categories"].items()})
+    row.update({f"cell[{c}]": v["recall"] for c, v in m["by_test_cell_recall"].items()})
+    row.update({f"ncell[{c}]": v["n"] for c, v in m["by_test_cell_recall"].items()})
     row.update({
         "combined_accuracy": cp["accuracy"], "combined_correct": cp["correct"], "combined_n": cp["n"],
         "cat_accuracy": cp["unweighted_mean_of_categories"],
@@ -223,6 +233,8 @@ def render_log(meta: dict, m: dict | None) -> str:
         f"FPR {_p(cl['fpr'])}  FPR(non-empty) {_p(cl['fpr_nonempty'])}",
         "recall by attack type: " + "; ".join(
             f"{k} {v['correct']}/{v['n']} {_p(v['recall'])}" for k, v in m["by_paradigm_recall"].items()),
+        "recall by test cell: " + ("; ".join(
+            f"{k} {v['correct']}/{v['n']} {_p(v['recall'])}" for k, v in m["by_test_cell_recall"].items()) or "-"),
         f"decided at stage: {m['decided_at_stage']}",
     ]
     return "\n".join(lines) + "\n"
@@ -299,18 +311,18 @@ def summarize(split: str, results: list[dict]) -> None:
         entry = {"model": MODELS[key][0], "model_key": key, "config": config,
                  "seeds_ok": len(ok), "seeds_total": len(rs),
                  "errors": [x["error"] for x in rs if x["status"] != "ok"]}
-        keys = [k for k in fields if k.startswith("acc[") or k.startswith("n[")] + list(SUMMARY_KEYS)
+        keys = [k for k in fields if k.startswith(("acc[", "n[", "cell[", "ncell["))] + list(SUMMARY_KEYS)
         for k in keys:
             vals = [x[k] for x in ok if x.get(k) is not None]
             if not vals:
                 continue
             entry[k] = statistics.mean(vals)
-            if not k.startswith("n["):
+            if not k.startswith(("n[", "ncell[")):
                 entry[f"{k}_std"] = statistics.stdev(vals) if len(vals) > 1 else 0.0
                 entry[f"{k}_seeds"] = vals
         summary.append(entry)
     (out / "summary.json").write_text(json.dumps({
-        "split": split, "held_out_categories": held_out_categories() if split == "heldout" else None,
+        "split": split, "held_out_categories": held_out_categories() if split != "val" else None,
         "seed_note": "fine-tuned rows: pooled metric per seed, then mean and sample std over seeds",
         "rows": summary,
     }, indent=2), encoding="utf-8")
@@ -325,7 +337,7 @@ def summarize(split: str, results: list[dict]) -> None:
 
 def main() -> None:
     ap = argparse.ArgumentParser(description="RQ1: score all six detectors on held-out MCPTox categories.")
-    ap.add_argument("--split", required=True, choices=["heldout", "val"])
+    ap.add_argument("--split", required=True, choices=["heldout", "test", "val"])
     ap.add_argument("--ckpt-root", required=True, help="directory with <init>_<scope>_seed<k>/ from train.py")
     ap.add_argument("--config", default=str(DEFAULT_CONFIG))
     ap.add_argument("--models", default=",".join(MODELS), help="comma list of model keys")

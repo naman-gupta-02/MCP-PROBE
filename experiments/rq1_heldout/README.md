@@ -14,25 +14,32 @@ MCP-Guard variants run as **Stage I + II** (paper mode, T_u = 0.45 from `configs
 ## Rows scored
 
 - `heldout`: the 227 held-out-category cases (all poisoned) + the 64 clean test tools (20 have empty descriptions). The script loads `test` with `FINAL_EVAL=1` and immediately drops the 155 seen-category test cases, which are never scored.
+- `test`: the whole test split, 446 rows: 382 poisoned cases in three test cells (`new_server_known_cat` 155, `known_server_new_cat` 194, `new_server_new_cat` 33) + the same 64 clean tools. Needs `FINAL_EVAL=1`. This one also scores the seen-category cases on test servers.
 - `val`: the dev reference (171 poisoned cases from seen categories on val servers + 49 clean tools), scored by the same code.
 
 ## Metrics
 
 - **Category accuracy** = correct / n within a category. Every held-out case is poisoned, so this is recall; a block-everything detector scores 100%.
 - **Combined accuracy** = pooled correct / pooled n over the three categories, not a mean of category accuracies (the unweighted mean is also logged for comparison, and the code asserts the pooled value).
+- **Test cell recall** (`test` and `heldout`): pooled recall within each test cell, poisoned cases only.
 - **With clean tools**: accuracy, precision, recall, F1, FPR and confusion matrix over held-out poisoned + clean test tools, overall and per category. FPR is also given over non-empty clean tools only, since MCP-Guard passes empty descriptions without scoring them.
 - Fine-tuned variants: each seed is pooled first, then mean ± sample std over the 5 seeds. Per-seed values are in `runs.csv`.
 
 ## Run
 
 ```bash
-sbatch experiments/rq1_heldout/carc/eval_heldout.slurm      # on CARC, where the checkpoints are
+sbatch experiments/rq1_heldout/carc/eval_heldout.slurm      # on CARC, where the checkpoints are: val + held-out
+sbatch --dependency=afterany:<heldout job id> experiments/rq1_heldout/carc/eval_test.slurm   # whole test split
 
 # or locally, with checkpoints from detectors/mcp_guard/train.py
 uv run python -m experiments.rq1_heldout.evaluate --split val --ckpt-root <dir>
 FINAL_EVAL=1 uv run python -m experiments.rq1_heldout.evaluate --split heldout --ckpt-root <dir>
-uv run python -m experiments.rq1_heldout.report
+FINAL_EVAL=1 uv run python -m experiments.rq1_heldout.evaluate --split test --ckpt-root <dir>
+uv run python -m experiments.rq1_heldout.report                # -> report.md
+uv run python -m experiments.rq1_heldout.report --split test   # -> report_test.md
 ```
+
+Run the test job after the held-out one (`--dependency`): both write the shared Stage II score cache (`results/mcp_guard/cache.sqlite`), and the test report's gap table uses the val results.
 
 ## Outputs (`results/rq1_heldout/`, gitignored)
 
@@ -40,5 +47,6 @@ uv run python -m experiments.rq1_heldout.report
 - `<split>/<model>/<config>[_seed<k>]/metrics.json` and `log.txt`: checkpoint, sample counts, correct/incorrect, metrics, confusion matrix, evaluation time, any error.
 - `<split>/runs.csv`: one row per run. `<split>/summary.{csv,json}`: one row per model and config (seed mean ± std).
 - `report.md`: the comparison tables ranked by combined accuracy, metrics with clean tools, and the val → held-out gap.
+- `report_test.md`: the same for the whole test split, with recall by test cell and by all ten risk categories.
 
 A run that fails (for example, a missing checkpoint) is recorded with `status: error` and its message. No numbers are filled in for it.

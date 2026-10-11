@@ -56,8 +56,10 @@ def test_overall_with_clean_and_fpr():
     assert m["clean"]["fpr"] == 2 / 4
     assert m["clean"]["fpr_nonempty"] == 2 / 3
     assert m["by_paradigm_recall"]["P2"] == {"n": 5, "correct": 4, "recall": 0.8}
+    assert m["by_test_cell_recall"] == {"x": {"n": 12, "correct": 9, "recall": 0.75}}  # poisoned rows only
     f = flat(m)
     assert f["combined_accuracy"] == 9 / 12 and f["acc[B]"] == 0.0 and f["n[A]"] == 10
+    assert f["cell[x]"] == 0.75 and f["ncell[x]"] == 12
 
 
 def test_block_everything_scores_full_category_accuracy():
