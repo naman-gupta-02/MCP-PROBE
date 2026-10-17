@@ -1,5 +1,7 @@
 # RQ1: held-out category evaluation
 
+Results and analysis: [RESULTS.md](RESULTS.md).
+
 Scores the six detectors on the three MCPTox risk categories that no detector was tuned on (`held_out_categories` in [server_split.json](../../data/splits/server_split.json): Credential Leakage, Instruction Tampering, Financial Loss). Nothing is trained, tuned or selected here: the scripts load the existing MCP-Guard checkpoints and the frozen MCP Guardian ruleset (fingerprint `9decc37e4f86`).
 
 | Model key | What it is |
@@ -35,6 +37,7 @@ sbatch --dependency=afterany:<heldout job id> experiments/rq1_heldout/carc/eval_
 uv run python -m experiments.rq1_heldout.evaluate --split val --ckpt-root <dir>
 FINAL_EVAL=1 uv run python -m experiments.rq1_heldout.evaluate --split heldout --ckpt-root <dir>
 FINAL_EVAL=1 uv run python -m experiments.rq1_heldout.evaluate --split test --ckpt-root <dir>
+uv run python -m experiments.rq1_heldout.evaluate --split heldout --summarize-only   # rebuild summaries from saved runs
 uv run python -m experiments.rq1_heldout.report                # -> report.md
 uv run python -m experiments.rq1_heldout.report --split test   # -> report_test.md
 ```

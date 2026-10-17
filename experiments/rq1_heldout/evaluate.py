@@ -338,11 +338,24 @@ def summarize(split: str, results: list[dict]) -> None:
 def main() -> None:
     ap = argparse.ArgumentParser(description="RQ1: score all six detectors on held-out MCPTox categories.")
     ap.add_argument("--split", required=True, choices=["heldout", "test", "val"])
-    ap.add_argument("--ckpt-root", required=True, help="directory with <init>_<scope>_seed<k>/ from train.py")
+    ap.add_argument("--ckpt-root", help="directory with <init>_<scope>_seed<k>/ from train.py")
     ap.add_argument("--config", default=str(DEFAULT_CONFIG))
     ap.add_argument("--models", default=",".join(MODELS), help="comma list of model keys")
     ap.add_argument("--seeds", default=",".join(map(str, SEEDS)))
+    ap.add_argument("--summarize-only", action="store_true",
+                    help="rebuild runs.csv/summary.* from every saved run of this split (no scoring)")
     args = ap.parse_args()
+
+    if args.summarize_only:
+        found = sorted((OUT_ROOT / args.split).glob("*/*/metrics.json"))
+        results = [json.loads(f.read_text(encoding="utf-8")) for f in found]
+        order = {k: i for i, k in enumerate(MODELS)}
+        results.sort(key=lambda r: (order[r["meta"]["model_key"]], r["meta"]["config"], r["meta"]["seed"] or 0))
+        summarize(args.split, results)
+        print(f"{len(results)} saved runs, {sum(r['meta']['status'] != 'ok' for r in results)} errors")
+        return
+    if not args.ckpt_root:
+        ap.error("--ckpt-root is required unless --summarize-only")
 
     rows = load_rows(args.split)
     seeds = [int(s) for s in args.seeds.split(",")]
