@@ -27,6 +27,16 @@ export PATH=$HOME/.local/bin:$PATH
 cd "$REPO"
 git log -1 --format='commit %H' && nvidia-smi --query-gpu=name --format=csv,noheader
 
+# Fail fast if the cached model files hang on read (seen 2026-10-12 on /scratch1: the job sat
+# in stat() until the time limit). Read everything Stage II needs; give up after 120 s.
+OK_FLAG=/tmp/rq1_preflight_$SLURM_JOB_ID
+( cat "$HF_HOME"/hub/models--GenTelLab--MCP-Guard/snapshots/*/* \
+      "$HF_HOME"/hub/models--google-bert--bert-base-uncased/snapshots/*/* \
+      "$CKPT_ROOT"/*/config.json "$CKPT_ROOT"/*/tokenizer_config.json > /dev/null && touch "$OK_FLAG" ) &
+for i in $(seq 1 24); do [ -f "$OK_FLAG" ] && break; sleep 5; done
+[ -f "$OK_FLAG" ] || { echo "preflight FAILED: model files did not read within 120 s"; exit 1; }
+echo "preflight ok"
+
 uv run python -m experiments.rq1_heldout.evaluate --split val --ckpt-root "$CKPT_ROOT"
 FINAL_EVAL=1 uv run python -m experiments.rq1_heldout.evaluate --split heldout --ckpt-root "$CKPT_ROOT"
 uv run python -m experiments.rq1_heldout.report
