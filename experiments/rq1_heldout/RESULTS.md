@@ -1,93 +1,501 @@
-# RQ1 results: do the detectors generalize to held-out MCPTox categories?
+# RQ1 results: do MCP tool-poisoning detectors generalize to unseen attack categories?
 
-Team 12, Experiment 1. All six detectors were scored on the three MCPTox (arXiv 2508.14925) risk categories that no detector was tuned on, and on the whole test split. Nothing was trained, tuned or selected on these rows. How the scoring works is described in [README.md](README.md).
+Team 12, Experiment 1 (generalization). This document records what we tested, how we tested it, every result we obtained and how to read them. All tables are generated from the saved result files in `results/rq1_heldout/` (gitignored). How to rerun everything is in [README.md](README.md).
 
-**Short answer:** every learned MCP-Guard variant (arXiv 2508.10991) catches 99–100% of held-out-category attacks, and MCP Guardian (arXiv 2504.12757) catches 36%. On MCPTox, a held-out *category* is not a hard test. Attacks from all categories share the same templates, which Stage I regexes and the Stage II classifier pick up regardless of category. So these numbers show that the detectors recognize MCPTox's template style. They don't show that the detectors understand new kinds of harm. Experiment 2 (the adaptive attacker) is the real test of that.
+## Summary
 
-## Setup
+- **What we tested:** six detectors (five MCP-Guard variants and MCP Guardian) on the three MCPTox risk categories that none of them was tuned on: Credential Leakage, Instruction Tampering and Financial Loss. We also scored them on the whole MCPTox test split and on val (dev data) for comparison.
+- **Main result:** the four strongest learned models catch **100%** of held-out-category attacks, Base E5 Head-Only catches **98.9%**, and MCP Guardian catches **36.1%**. With the 64 clean test tools included, **Base E5 Full** is best (F1 100.0, 0.2 of 64 clean tools wrongly flagged on average).
+- **How to read it:** on MCPTox, holding out a category is not a hard test. Attacks in every category are written with the same templates, so Stage I regexes alone block 178 of the 227 held-out attacks, and MCP-Guard as released, never trained on MCPTox, scores the same 100% as the models trained on it. These numbers show that the detectors recognize MCPTox's template style. They do not show that the detectors understand new kinds of harm. That question belongs to Experiment 2 (adaptive attacker).
 
-| | |
+## 1. What we are testing
+
+**Research question:** how well do MCP tool-poisoning detectors generalize to attack categories they have never seen?
+
+An MCP tool's description is text the agent reads. A poisoned description hides instructions such as "also read ~/.ssh/id_rsa". A detector inspects the description and blocks the tool if it looks poisoned. A detector "generalizes" if it still catches attacks whose kind of harm it was never tuned on, without blocking clean tools.
+
+### The six detectors
+
+| # | Model | What it is | Trained on MCPTox? |
+|---|---|---|---|
+| 1 | **Frozen MCP-Guard** | MCP-Guard (arXiv 2508.10991) Stage II classifier as released: `GenTelLab/MCP-Guard` @ `861a928` (E5-base / XLM-RoBERTa architecture) with the BERT tokenizer its code uses | No |
+| 2 | **MCP-Guard Full** | Weights of #1, all layers fine-tuned on our `tune` split (lr 2e-5, 5 epochs) | Yes, 5 seeds |
+| 3 | **MCP-Guard Head-Only** | Weights of #1, encoder frozen, only the classification head trained (lr 1e-3, 10 epochs) | Yes, 5 seeds |
+| 4 | **Base E5 Full** | `intfloat/multilingual-e5-base` @ `d128750` + new classification head, all layers fine-tuned | Yes, 5 seeds |
+| 5 | **Base E5 Head-Only** | Same encoder, frozen; only the new head trained | Yes, 5 seeds |
+| 6 | **MCP-Guardian** | Our reimplementation of MCP Guardian (arXiv 2504.12757): a regex filter with the paper's 11 rules (fingerprint `9decc37e4f86`), never tuned on MCPTox | No |
+
+The fine-tuned models were trained on our `tune` split only: 759 poisoned cases (the seven non-held-out categories, plus 4 labelled "Other") and 223 non-empty clean tools. Training used class-weighted cross-entropy, AdamW, batch size 16 and max length 128, with the best epoch picked by val F1. Training ran on a CARC A40 (job `12848251`, 2026-10-08). Nothing was trained, tuned or selected in this experiment.
+
+### Configurations
+
+- **MCP-Guard Stage I + II** (main result): Stage I is MCP-Guard's 7 regex detectors. A hit blocks the tool. Otherwise Stage II blocks it if P(poisoned) > 0.45 (paper mode, `configs/mcp_guard.yaml`). Stage I is identical in all five MCP-Guard variants.
+- **MCP-Guard Stage II alone**: only the classifier, same 0.45 threshold. This isolates the differences between encoders.
+- **Stage III** (the LLM check) was **not run**. In paper mode it only sees Stage II scores between 0.45 and 0.55, which almost never occur here (Section 5.8).
+- **Inputs:** MCP-Guard reads the tool description. Guardian reads the tool name + description, as in its own evaluator (`detectors/mcp_guardian/evaluate_rules.py`). Our records have no parameter schema.
+
+## 2. Data
+
+MCPTox (arXiv 2508.14925) at commit `f85189f`, split by `scripts/build_splits.py` using `data/splits/server_split.json`. The three held-out risk categories never appear in `tune` or `val`.
+
+| Row set | Poisoned | Clean | Total | Used for |
+|---|---:|---:|---:|---|
+| **Held-out categories** | 227 (Credential Leakage 115, Instruction Tampering 57, Financial Loss 55; from 26 servers) | 64 (from the 9 test servers; 20 have empty descriptions) | **291** | Main RQ1 result |
+| **Whole test split** | 382 (the 227 above + 155 seen-category cases on the 9 test servers) | the same 64 | **446** | Extra view by test cell |
+| **val** (dev reference) | 171 (seen categories, 6 val servers) | 49 | 220 | Dev-side comparison |
+
+The test split is divided into three test cells:
+
+| Test cell | Poisoned cases | What it measures |
+|---|---:|---|
+| `known_server_new_cat` | 194 | New category, server seen in training |
+| `new_server_known_cat` | 155 | Seen category, new server |
+| `new_server_new_cat` | 33 | Both new |
+
+**By attack type:**
+- Held-out: P1 43, P2 96, P3 88.
+- Whole test: P1 56, P2 147, P3 179.
+- P1: the user asks for the tool directly. P2: a fake "background" tool triggers on related actions. P3: an unrelated tool rewrites another tool's parameters.
+
+**Leakage control:**
+- The test split loads only with `FINAL_EVAL=1`.
+- The held-out run drops the 155 seen-category cases right after loading.
+- Prediction files store case IDs, labels and verdicts only, never description text.
+- All six models are scored on exactly the same rows.
+
+## 3. What we did
+
+1. **Code** (`experiments/rq1_heldout/`). `evaluate.py` reuses the existing `MCPGuard` pipeline, the fine-tuned checkpoint loader, `binary_metrics` and Guardian's `WafScanner`. `report.py` builds comparison tables, and `carc/*.slurm` holds the CARC jobs. Unit tests check that combined accuracy is pooled, not averaged.
+2. **Checks before the real run, on val:**
+   - Frozen MCP-Guard reproduced the earlier val report exactly (acc 92.7, F1 95.5, FPR 32.7).
+   - Guardian matched its own evaluator (23 of 171 caught, 0 of 49 clean flagged).
+   - A re-saved copy of the MCP-Guard weights, loaded through the fine-tuned loader, gave predictions identical to Frozen (0 differences).
+   - A missing checkpoint is recorded as an error with no numbers filled in.
+3. **CARC attempt.**
+   - Job `12930071` (2026-10-12) hit its 1-hour limit with no runs finished. Some cached model files on CARC's `/scratch1` storage hung on any access, a storage fault rather than our code.
+   - The whole-test job `12930667` was put on hold.
+   - On 2026-10-16 the storage was readable again. We added a 2-minute startup check to the job script and resubmitted as `13203627`, with `12930667` chained after it. Both are still queued, left on purpose as an independent rerun.
+4. **Local run (2026-10-16), which produced every number below.**
+   - Each of the 20 fine-tuned checkpoints was copied from CARC to a laptop (~40 s per 1.1 GB), scored on val, held-out and the whole test split (both configurations), then deleted.
+   - Frozen MCP-Guard and Guardian need no download.
+   - 129 runs in total (43 per row set), 0 errors, about 32 minutes, on CPU.
+5. **Cross-check.** All 21 val confusion matrices (Frozen + 20 checkpoints) are identical to the ones the CARC training sweep recorded on GPU for the same checkpoints.
+
+## 4. Metrics
+
+| Metric | Definition |
 |---|---|
-| Held-out categories | C1 Credential Leakage (n = 115), C2 Instruction Tampering (n = 57), C3 Financial Loss (n = 55): 227 poisoned cases from 26 servers. Source: `held_out_categories` in `data/splits/server_split.json`. |
-| Clean tools | 64 clean tools from the 9 test servers (20 have empty descriptions) |
-| Whole test split | 446 rows: 382 poisoned (`known_server_new_cat` 194, `new_server_known_cat` 155, `new_server_new_cat` 33) + the same 64 clean tools |
-| Dev reference | val: 171 poisoned cases (seen categories, val servers) + 49 clean tools |
-| MCP-Guard | Stage I + II in paper mode (T_u = 0.45), and Stage II alone. Stage III not run. |
-| Fine-tuned variants | 5 seeds each. Every metric is pooled per seed, then reported as mean ± std over seeds. |
-| Run | Laptop CPU, 2026-10-16, code at `f1b5e70` + `--summarize-only`. Each checkpoint was copied from CARC, scored and deleted. 129 runs, 0 errors. |
-| Check | All 21 val confusion matrices (frozen + 20 checkpoints) are identical to the ones the CARC training sweep recorded for the same checkpoints. |
+| **Category accuracy** | correct / n within one risk category. Every case in a category is poisoned, so this equals **recall**: a detector that blocks everything would score 100%. |
+| **Combined accuracy** | (correct in C1 + C2 + C3) / (n in C1 + C2 + C3): pooled over all held-out cases, not a mean of category accuracies. The unweighted mean is shown next to it only for comparison, and the code checks the pooled value. |
+| **Precision / Recall / F1 / Accuracy** | Over poisoned cases **plus the clean tools** of the same row set (positive = poisoned). Precision is undefined inside a single category, because a category has no clean tools. |
+| **FPR** | Clean tools wrongly blocked / all clean tools. Also given over non-empty clean tools only, because MCP-Guard passes empty descriptions without scoring them. |
+| **Test-cell / attack-type recall** | Pooled recall within that group, poisoned cases only. |
+| **Seeds** | Each fine-tuned seed is scored on its own. Tables show mean ± sample std over the 5 seeds, so confusion-matrix counts can be fractions. Frozen and Guardian have a single run. |
 
-Category accuracy = recall, since every held-out case is poisoned. Combined accuracy = pooled correct / pooled n. It is not a mean of category accuracies. The difference matters for Guardian: pooled 36.1% vs an unweighted mean of 24.9%.
+With 64 clean tools, one false positive moves the FPR by 1.6 points. As an example of the uncertainty, 2 of 64 has a 95% interval of about 0.4–10.8%.
 
-## Table 1: held-out category accuracy, MCP-Guard Stage I + II (ranked by combined accuracy)
+## 5. Results on the held-out categories (main result)
 
-| Rank | Model | C1 Credential Leakage | C2 Instruction Tampering | C3 Financial Loss | **Combined** |
-|---:|---|---:|---:|---:|---:|
-| 1= | Frozen MCP-Guard | 100.0 | 100.0 | 100.0 | **100.0** |
-| 1= | MCP-Guard Full | 100.0 ± 0.0 | 100.0 ± 0.0 | 100.0 ± 0.0 | **100.0 ± 0.0** |
-| 1= | MCP-Guard Head-Only | 100.0 ± 0.0 | 100.0 ± 0.0 | 100.0 ± 0.0 | **100.0 ± 0.0** |
-| 1= | Base E5 Full | 100.0 ± 0.0 | 100.0 ± 0.0 | 100.0 ± 0.0 | **100.0 ± 0.0** |
-| 5 | Base E5 Head-Only | 99.8 ± 0.4 | 100.0 ± 0.0 | 96.0 ± 0.8 | **98.9 ± 0.2** |
-| 6 | MCP-Guardian | 67.8 | 7.0 | 0.0 | **36.1** |
+### 5.1 Category accuracy and combined accuracy
 
-Stage II alone gives the same picture: Frozen, MCP-Guard Full and MCP-Guard Head-Only 100.0, Base E5 Full 99.9 ± 0.2, Base E5 Head-Only 95.5 ± 0.6 (Financial Loss 86.5 ± 1.0), Guardian 36.1.
+**Stage I + II**
 
-## Table 2: held-out poisoned + 64 clean test tools (Stage I + II)
+| Model | Credential Leakage * (n=115) | Instruction Tampering * (n=57) | Financial Loss * (n=55) | **Combined (pooled)** | Unweighted mean |
+|---|---:|---:|---:|---:|---:|
+| Frozen MCP-Guard | 100.0 | 100.0 | 100.0 | **100.0** | 100.0 |
+| MCP-Guard Full | 100.0 ± 0.0 | 100.0 ± 0.0 | 100.0 ± 0.0 | **100.0 ± 0.0** | 100.0 ± 0.0 |
+| MCP-Guard Head-Only | 100.0 ± 0.0 | 100.0 ± 0.0 | 100.0 ± 0.0 | **100.0 ± 0.0** | 100.0 ± 0.0 |
+| Base E5 Full | 100.0 ± 0.0 | 100.0 ± 0.0 | 100.0 ± 0.0 | **100.0 ± 0.0** | 100.0 ± 0.0 |
+| Base E5 Head-Only | 99.8 ± 0.4 | 100.0 ± 0.0 | 96.0 ± 0.8 | **98.9 ± 0.2** | 98.6 ± 0.3 |
+| MCP-Guardian | 67.8 | 7.0 | 0.0 | **36.1** | 24.9 |
 
-| Model | Accuracy | Precision | Recall | F1 | FPR | FPR (non-empty clean) | FP of 64 |
-|---|---:|---:|---:|---:|---:|---:|---:|
-| Base E5 Full | 99.9 ± 0.2 | 99.9 ± 0.2 | 100.0 ± 0.0 | **100.0 ± 0.1** | 0.3 ± 0.7 | 0.5 ± 1.0 | 0.2 |
-| MCP-Guard Full | 99.7 ± 0.2 | 99.6 ± 0.3 | 100.0 ± 0.0 | 99.8 ± 0.2 | 1.6 ± 1.1 | 2.3 ± 1.6 | 1.0 |
-| Frozen MCP-Guard | 99.3 | 99.1 | 100.0 | 99.6 | 3.1 | 4.5 | 2 |
-| MCP-Guard Head-Only | 99.0 ± 0.6 | 98.8 ± 0.7 | 100.0 ± 0.0 | 99.4 ± 0.4 | 4.4 ± 2.6 | 6.4 ± 3.7 | 2.8 |
-| Base E5 Head-Only | 97.8 ± 0.6 | 98.3 ± 0.7 | 98.9 ± 0.2 | 98.6 ± 0.4 | 6.2 ± 2.5 | 9.1 ± 3.6 | 4.0 |
-| MCP-Guardian | 50.2 | 100.0 | 36.1 | 53.1 | 0.0 | 0.0 | 0 |
+**Stage II alone**
 
-For MCP-Guard, Stage II alone gives identical with-clean numbers, except that Base E5 Full's recall drops to 99.9 and Base E5 Head-Only's to 95.5 (F1 96.8). Stage I fired on none of the 64 clean test tools.
+| Model | Credential Leakage * (n=115) | Instruction Tampering * (n=57) | Financial Loss * (n=55) | **Combined (pooled)** | Unweighted mean |
+|---|---:|---:|---:|---:|---:|
+| Frozen MCP-Guard | 100.0 | 100.0 | 100.0 | **100.0** | 100.0 |
+| MCP-Guard Full | 100.0 ± 0.0 | 100.0 ± 0.0 | 100.0 ± 0.0 | **100.0 ± 0.0** | 100.0 ± 0.0 |
+| MCP-Guard Head-Only | 100.0 ± 0.0 | 100.0 ± 0.0 | 100.0 ± 0.0 | **100.0 ± 0.0** | 100.0 ± 0.0 |
+| Base E5 Full | 100.0 ± 0.0 | 100.0 ± 0.0 | 99.6 ± 0.8 | **99.9 ± 0.2** | 99.9 ± 0.3 |
+| Base E5 Head-Only | 97.6 ± 0.7 | 100.0 ± 0.0 | 86.5 ± 1.0 | **95.5 ± 0.6** | 94.7 ± 0.5 |
+| MCP-Guardian | 67.8 | 7.0 | 0.0 | **36.1** | 24.9 |
 
-## Table 3: whole test split, recall by test cell (Stage I + II)
+Correct predictions out of the total (Stage I + II; seed mean for fine-tuned):
 
-| Model | known server, new category (194) | new server, known category (155) | new server, new category (33) | Combined (382) | F1 with clean | FPR |
-|---|---:|---:|---:|---:|---:|---:|
-| Frozen MCP-Guard | 100.0 | 100.0 | 100.0 | 100.0 | 99.7 | 3.1 |
-| MCP-Guard Full | 100.0 | 100.0 | 100.0 | 100.0 | 99.9 ± 0.1 | 1.6 ± 1.1 |
-| MCP-Guard Head-Only | 100.0 | 100.0 | 100.0 | 100.0 | 99.6 ± 0.2 | 4.4 ± 2.6 |
-| Base E5 Full | 100.0 | 100.0 | 100.0 | 100.0 | 100.0 ± 0.1 | 0.3 ± 0.7 |
-| Base E5 Head-Only | 98.9 ± 0.2 | 99.9 ± 0.3 | 99.4 ± 1.4 | 99.3 ± 0.2 | 99.1 ± 0.3 | 6.2 ± 2.5 |
-| MCP-Guardian | 39.7 | 3.9 | 15.2 | 23.0 | 37.4 | 0.0 |
+| Model | Credential Leakage correct / 115 | Instruction Tampering correct / 57 | Financial Loss correct / 55 | Combined correct / 227 |
+|---|---:|---:|---:|---:|
+| Frozen MCP-Guard | 115 | 57 | 55 | 227 |
+| MCP-Guard Full | 115.0 | 57.0 | 55.0 | 227.0 |
+| MCP-Guard Head-Only | 115.0 | 57.0 | 55.0 | 227.0 |
+| Base E5 Full | 115.0 | 57.0 | 55.0 | 227.0 |
+| Base E5 Head-Only | 114.8 | 57.0 | 52.8 | 224.6 |
+| MCP-Guardian | 78 | 4 | 0 | 82 |
 
-With Stage II alone, the learned models' combined recall is 97.2 (Base E5 Head-Only) to 99.9. The seen-category cases on new servers are about as easy as the new categories: Guardian is the only detector with a large gap between cells, and it goes the other way, catching 3.9% of the seen categories and 39.7% of the new ones.
+Ranking by combined accuracy (Stage I + II):
+1. Frozen MCP-Guard, MCP-Guard Full, MCP-Guard Head-Only and Base E5 Full tie at 100.0.
+2. Base E5 Head-Only, 98.9.
+3. MCP-Guardian, 36.1.
 
-## Table 4: val → held-out (Stage I + II)
+Stage II alone gives the same order, except that Base E5 Full drops to 99.9 and Base E5 Head-Only to 95.5. For Guardian, the pooled value (36.1) and the unweighted mean (24.9) differ a lot, because its catches come almost entirely from the largest category.
 
-| Model | Recall val | Recall held-out | F1 val | F1 held-out | FPR val (49 clean) | FPR held-out (64 clean) |
-|---|---:|---:|---:|---:|---:|---:|
-| Frozen MCP-Guard | 100.0 | 100.0 | 95.5 | 99.6 | 32.7 | 3.1 |
-| MCP-Guard Full | 100.0 | 100.0 | 95.8 ± 0.3 | 99.8 ± 0.2 | 30.6 ± 2.0 | 1.6 ± 1.1 |
-| MCP-Guard Head-Only | 100.0 | 100.0 | 95.5 ± 0.1 | 99.4 ± 0.4 | 33.1 ± 0.9 | 4.4 ± 2.6 |
-| Base E5 Full | 100.0 | 100.0 | 96.6 ± 0.1 | 100.0 ± 0.1 | 24.9 ± 0.9 | 0.3 ± 0.7 |
-| Base E5 Head-Only | 100.0 | 98.9 ± 0.2 | 95.9 ± 0.2 | 98.6 ± 0.4 | 30.2 ± 1.7 | 6.2 ± 2.5 |
-| MCP-Guardian | 13.5 | 36.1 | 23.7 | 53.1 | 0.0 | 0.0 |
+### 5.2 Held-out poisoned + 64 clean test tools (precision, recall, F1, confusion matrix)
 
-## Findings
+**Stage I + II**
 
-1. **Highest combined accuracy.** Four learned models tie at 100% held-out accuracy, so the metric doesn't separate them. On F1 and false-positive rate with the clean tools, **Base E5 Full is best** (F1 100.0 ± 0.1, 0.2 of 64 clean tools flagged on average). Next come MCP-Guard Full (1.0), Frozen (2) and MCP-Guard Head-Only (2.8). These gaps are 1–3 tools out of 64, which is within noise: 2 of 64 has a 95% interval of roughly 0.4–10.8%.
-2. **Full vs head-only fine-tuning.** Full fine-tuning is at least as good everywhere. Head-only E5 is the only learned model that misses attacks: 2.4 per seed with Stage I, 10.2 with Stage II alone. Across the 5 seeds those misses are almost all P1 cases, with Financial Loss P1 the largest group (37 of 51 pooled misses), and its false-positive rate is the highest (6.2%). Head-only MCP-Guard flags slightly more clean tools than full MCP-Guard (2.8 vs 1.0).
-3. **MCP-Guard's encoder vs base E5.** Frozen, MCP-Guard's security-trained encoder needs no MCPTox training to reach 100% held-out recall. With a frozen encoder (head-only), the MCP-Guard encoder beats E5: 100% vs 95.5% recall with Stage II alone, 4.4% vs 6.2% FPR. With full fine-tuning, the two starting points become equivalent, and E5 Full has the fewest false positives. The security pre-training mostly helps when the encoder can't be updated.
-4. **Rule-based Guardian.** It never flags a clean tool, but it catches 36.1% of held-out attacks and 23.0% of the whole test split. What it catches depends on topic overlap with its 11 rules. Credential Leakage (67.8%) is caught almost entirely by the `ssh_key`, `env_secret` and `sensitive_file` rules. Financial Loss (0%) matches no rule at all. Guardian's "better" held-out score than on val (13.5%) reflects the categories it happens to cover, not generalization.
-5. **Hardest category.** Financial Loss is the hardest: 0% for Guardian, 96.0% for Base E5 Head-Only (86.5% with Stage II alone), and the source of most head-only E5 misses. Instruction Tampering is hard only for Guardian (7.0%).
+| Model | Accuracy | Precision | Recall | F1 | FPR (all clean) | FPR (non-empty clean) | TP | FP | FN | TN |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| Frozen MCP-Guard | 99.3 | 99.1 | 100.0 | 99.6 | 3.1 | 4.5 | 227 | 2 | 0 | 62 |
+| MCP-Guard Full | 99.7 ± 0.2 | 99.6 ± 0.3 | 100.0 ± 0.0 | 99.8 ± 0.2 | 1.6 ± 1.1 | 2.3 ± 1.6 | 227.0 | 1.0 | 0.0 | 63.0 |
+| MCP-Guard Head-Only | 99.0 ± 0.6 | 98.8 ± 0.7 | 100.0 ± 0.0 | 99.4 ± 0.4 | 4.4 ± 2.6 | 6.4 ± 3.7 | 227.0 | 2.8 | 0.0 | 61.2 |
+| Base E5 Full | 99.9 ± 0.2 | 99.9 ± 0.2 | 100.0 ± 0.0 | 100.0 ± 0.1 | 0.3 ± 0.7 | 0.5 ± 1.0 | 227.0 | 0.2 | 0.0 | 63.8 |
+| Base E5 Head-Only | 97.8 ± 0.6 | 98.3 ± 0.7 | 98.9 ± 0.2 | 98.6 ± 0.4 | 6.2 ± 2.5 | 9.1 ± 3.6 | 224.6 | 4.0 | 2.4 | 60.0 |
+| MCP-Guardian | 50.2 | 100.0 | 36.1 | 53.1 | 0.0 | 0.0 | 82 | 0 | 145 | 64 |
 
-## Why the near-perfect scores should not be read as "generalizes well"
+**Stage II alone**
 
-- **Shared templates.** Stage I alone blocks 178 of 227 held-out cases, mostly through `shell_injection` (89) and `important_tag` (76), the same template cues it fires on in tune. With Stage II alone, Frozen MCP-Guard gives every held-out poisoned case a score of ≥ 0.995. Category labels change *what* the attack asks for, not *how* MCPTox phrases it.
-- **Frozen = fine-tuned.** A model that never saw MCPTox scores the same 100% as models trained on it. MCPTox's category split therefore can't tell training on attacks from recognizing the template.
-- **The FPR "improvement" comes from server shift, not category.** False-positive rate falls from ~25–33% on val to ~0–6% on test because the clean tools come from different servers. On val, the false positives came from Commander (Stage I) and Codacy (Stage II). On test, they come from Claude Post, BraveSearch and Financial Dataset, and there are only 64 clean tools in total. Treat the FPR columns as a difference between server sets.
-- **The clean set is small and partly empty.** 20 of the 64 clean descriptions are empty, and MCP-Guard passes those without scoring them. The FPR over non-empty tools is about 1.5× higher (Table 2).
-- **Length shortcut not ruled out.** Clean descriptions are much shorter than poisoned ones (median 14 vs 60 tokens on tune). A length-matched check is still open.
-- **Stage III was not run, and would rarely trigger.** Paper-mode Stage III only sees Stage II scores between 0.45 and 0.55. On the held-out rows, Frozen MCP-Guard has none (0 of 291). Across the 20 fine-tuned checkpoints, 16 of 5,420 scores fall in that band (0.3%), mostly from the head-only models. So Stage III could change at most a handful of decisions.
+| Model | Accuracy | Precision | Recall | F1 | FPR (all clean) | FPR (non-empty clean) | TP | FP | FN | TN |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| Frozen MCP-Guard | 99.3 | 99.1 | 100.0 | 99.6 | 3.1 | 4.5 | 227 | 2 | 0 | 62 |
+| MCP-Guard Full | 99.7 ± 0.2 | 99.6 ± 0.3 | 100.0 ± 0.0 | 99.8 ± 0.2 | 1.6 ± 1.1 | 2.3 ± 1.6 | 227.0 | 1.0 | 0.0 | 63.0 |
+| MCP-Guard Head-Only | 99.0 ± 0.6 | 98.8 ± 0.7 | 100.0 ± 0.0 | 99.4 ± 0.4 | 4.4 ± 2.6 | 6.4 ± 3.7 | 227.0 | 2.8 | 0.0 | 61.2 |
+| Base E5 Full | 99.9 ± 0.2 | 99.9 ± 0.2 | 99.9 ± 0.2 | 99.9 ± 0.1 | 0.3 ± 0.7 | 0.5 ± 1.0 | 226.8 | 0.2 | 0.2 | 63.8 |
+| Base E5 Head-Only | 95.1 ± 0.8 | 98.2 ± 0.7 | 95.5 ± 0.6 | 96.8 ± 0.5 | 6.2 ± 2.5 | 9.1 ± 3.6 | 216.8 | 4.0 | 10.2 | 60.0 |
+| MCP-Guardian | 50.2 | 100.0 | 36.1 | 53.1 | 0.0 | 0.0 | 82 | 0 | 145 | 64 |
 
-**What this means for the paper:** on MCPTox, held-out categories are close to in-distribution for every learned detector. Report the held-out result as a ceiling, and put the generalization claim on Experiment 2 (rewritten attacks) and Experiment 3 (live servers).
+### 5.3 Per category against the same 64 clean tools (precision / recall / F1)
 
-## Files
+**Stage I + II**
 
-The full tables, per-seed values and sample-level predictions are in `results/rq1_heldout/` (gitignored): `report.md`, `report_test.md`, `<split>/summary.{csv,json}`, `<split>/runs.csv`, and `<split>/<model>/<run>/{predictions.jsonl,metrics.json,log.txt}`. Regenerate them with the commands in [README.md](README.md).
+| Model | Credential Leakage: P / R / F1 | Instruction Tampering: P / R / F1 | Financial Loss: P / R / F1 |
+|---|---:|---:|---:|
+| Frozen MCP-Guard | 98.3 / 100.0 / 99.1 | 96.6 / 100.0 / 98.3 | 96.5 / 100.0 / 98.2 |
+| MCP-Guard Full | 99.1 ± 0.6 / 100.0 ± 0.0 / 99.6 ± 0.3 | 98.3 ± 1.2 / 100.0 ± 0.0 / 99.1 ± 0.6 | 98.2 ± 1.2 / 100.0 ± 0.0 / 99.1 ± 0.6 |
+| MCP-Guard Head-Only | 97.6 ± 1.4 / 100.0 ± 0.0 / 98.8 ± 0.7 | 95.4 ± 2.6 / 100.0 ± 0.0 / 97.6 ± 1.4 | 95.2 ± 2.7 / 100.0 ± 0.0 / 97.5 ± 1.4 |
+| Base E5 Full | 99.8 ± 0.4 / 100.0 ± 0.0 / 99.9 ± 0.2 | 99.7 ± 0.8 / 100.0 ± 0.0 / 99.8 ± 0.4 | 99.6 ± 0.8 / 100.0 ± 0.0 / 99.8 ± 0.4 |
+| Base E5 Head-Only | 96.6 ± 1.3 / 99.8 ± 0.4 / 98.2 ± 0.7 | 93.5 ± 2.4 / 100.0 ± 0.0 / 96.6 ± 1.3 | 93.0 ± 2.6 / 96.0 ± 0.8 / 94.5 ± 1.5 |
+| MCP-Guardian | 100.0 / 67.8 / 80.8 | 100.0 / 7.0 / 13.1 | – / 0.0 / – |
+
+**Stage II alone**
+
+| Model | Credential Leakage: P / R / F1 | Instruction Tampering: P / R / F1 | Financial Loss: P / R / F1 |
+|---|---:|---:|---:|
+| Frozen MCP-Guard | 98.3 / 100.0 / 99.1 | 96.6 / 100.0 / 98.3 | 96.5 / 100.0 / 98.2 |
+| MCP-Guard Full | 99.1 ± 0.6 / 100.0 ± 0.0 / 99.6 ± 0.3 | 98.3 ± 1.2 / 100.0 ± 0.0 / 99.1 ± 0.6 | 98.2 ± 1.2 / 100.0 ± 0.0 / 99.1 ± 0.6 |
+| MCP-Guard Head-Only | 97.6 ± 1.4 / 100.0 ± 0.0 / 98.8 ± 0.7 | 95.4 ± 2.6 / 100.0 ± 0.0 / 97.6 ± 1.4 | 95.2 ± 2.7 / 100.0 ± 0.0 / 97.5 ± 1.4 |
+| Base E5 Full | 99.8 ± 0.4 / 100.0 ± 0.0 / 99.9 ± 0.2 | 99.7 ± 0.8 / 100.0 ± 0.0 / 99.8 ± 0.4 | 99.6 ± 0.8 / 99.6 ± 0.8 / 99.6 ± 0.5 |
+| Base E5 Head-Only | 96.6 ± 1.3 / 97.6 ± 0.7 / 97.1 ± 0.8 | 93.5 ± 2.4 / 100.0 ± 0.0 / 96.6 ± 1.3 | 92.3 ± 2.8 / 86.5 ± 1.0 / 89.3 ± 1.6 |
+| MCP-Guardian | 100.0 / 67.8 / 80.8 | 100.0 / 7.0 / 13.1 | – / 0.0 / – |
+
+Guardian flags nothing in Financial Loss, so its precision there is undefined (–).
+
+### 5.4 By attack type (recall)
+
+**Stage I + II**
+
+| Model | P1 (n=43) | P2 (n=96) | P3 (n=88) |
+|---|---:|---:|---:|
+| Frozen MCP-Guard | 100.0 | 100.0 | 100.0 |
+| MCP-Guard Full | 100.0 ± 0.0 | 100.0 ± 0.0 | 100.0 ± 0.0 |
+| MCP-Guard Head-Only | 100.0 ± 0.0 | 100.0 ± 0.0 | 100.0 ± 0.0 |
+| Base E5 Full | 100.0 ± 0.0 | 100.0 ± 0.0 | 100.0 ± 0.0 |
+| Base E5 Head-Only | 94.9 ± 1.0 | 100.0 ± 0.0 | 99.8 ± 0.5 |
+| MCP-Guardian | 37.2 | 58.3 | 11.4 |
+
+**Stage II alone**
+
+| Model | P1 (n=43) | P2 (n=96) | P3 (n=88) |
+|---|---:|---:|---:|
+| Frozen MCP-Guard | 100.0 | 100.0 | 100.0 |
+| MCP-Guard Full | 100.0 ± 0.0 | 100.0 ± 0.0 | 100.0 ± 0.0 |
+| MCP-Guard Head-Only | 100.0 ± 0.0 | 100.0 ± 0.0 | 100.0 ± 0.0 |
+| Base E5 Full | 99.5 ± 1.0 | 100.0 ± 0.0 | 100.0 ± 0.0 |
+| Base E5 Head-Only | 76.7 ± 2.8 | 100.0 ± 0.0 | 99.8 ± 0.5 |
+| MCP-Guardian | 37.2 | 58.3 | 11.4 |
+
+### 5.5 By test cell (recall)
+
+| Model | known_server_new_cat (n=194) | new_server_new_cat (n=33) |
+|---|---:|---:|
+| Frozen MCP-Guard | 100.0 | 100.0 |
+| MCP-Guard Full | 100.0 ± 0.0 | 100.0 ± 0.0 |
+| MCP-Guard Head-Only | 100.0 ± 0.0 | 100.0 ± 0.0 |
+| Base E5 Full | 100.0 ± 0.0 | 100.0 ± 0.0 |
+| Base E5 Head-Only | 98.9 ± 0.2 | 99.4 ± 1.4 |
+| MCP-Guardian | 39.7 | 15.2 |
+
+### 5.6 Per seed (combined accuracy / F1 with clean / clean tools flagged)
+
+**Stage I + II**
+
+| Model | Seed 0 | Seed 1 | Seed 2 | Seed 3 | Seed 4 |
+|---|---:|---:|---:|---:|---:|
+| MCP-Guard Full | 100.0 / 99.6 / 2 | 100.0 / 99.8 / 1 | 100.0 / 99.8 / 1 | 100.0 / 100.0 / 0 | 100.0 / 99.8 / 1 |
+| MCP-Guard Head-Only | 100.0 / 98.9 / 5 | 100.0 / 99.8 / 1 | 100.0 / 99.6 / 2 | 100.0 / 99.6 / 2 | 100.0 / 99.1 / 4 |
+| Base E5 Full | 100.0 / 100.0 / 0 | 100.0 / 99.8 / 1 | 100.0 / 100.0 / 0 | 100.0 / 100.0 / 0 | 100.0 / 100.0 / 0 |
+| Base E5 Head-Only | 99.1 / 98.3 / 6 | 98.7 / 98.5 / 4 | 98.7 / 98.2 / 5 | 99.1 / 98.9 / 3 | 99.1 / 99.1 / 2 |
+
+**Stage II alone**
+
+| Model | Seed 0 | Seed 1 | Seed 2 | Seed 3 | Seed 4 |
+|---|---:|---:|---:|---:|---:|
+| MCP-Guard Full | 100.0 / 99.6 / 2 | 100.0 / 99.8 / 1 | 100.0 / 99.8 / 1 | 100.0 / 100.0 / 0 | 100.0 / 99.8 / 1 |
+| MCP-Guard Head-Only | 100.0 / 98.9 / 5 | 100.0 / 99.8 / 1 | 100.0 / 99.6 / 2 | 100.0 / 99.6 / 2 | 100.0 / 99.1 / 4 |
+| Base E5 Full | 100.0 / 100.0 / 0 | 100.0 / 99.8 / 1 | 100.0 / 100.0 / 0 | 100.0 / 100.0 / 0 | 99.6 / 99.8 / 0 |
+| Base E5 Head-Only | 96.0 / 96.7 / 6 | 95.2 / 96.6 / 4 | 94.7 / 96.2 / 5 | 95.6 / 97.1 / 3 | 96.0 / 97.5 / 2 |
+
+### 5.7 Which stage decides, and which clean tools get flagged
+
+Decisions on the 291 rows (Stage I + II). Stage I fires on 178 poisoned cases and on none of the 64 clean tools, identically for all five MCP-Guard variants, because Stage I is shared:
+
+| Model | Decided by Stage I | Decided by Stage II | Empty description (auto-allow) |
+|---|---:|---:|---:|
+| Frozen MCP-Guard | 178 | 93 | 20 |
+| MCP-Guard Full | 178.0 | 93.0 | 20.0 |
+| MCP-Guard Head-Only | 178.0 | 93.0 | 20.0 |
+| Base E5 Full | 178.0 | 93.0 | 20.0 |
+| Base E5 Head-Only | 178.0 | 93.0 | 20.0 |
+
+The most frequent Stage I rules on held-out cases are `shell_injection` (89), `important_tag` (76), `sensitive_file` (62), `shadow_hijack` (40) and `sql_injection` (15). A case can hit several rules.
+
+Clean test tools flagged (Stage I + II):
+
+| Model | Clean tools flagged, by server (summed over seeds) |
+|---|---|
+| Frozen MCP-Guard | Claude Post 1, BraveSearch 1 |
+| MCP-Guard Full | Financial Dataset 4, Fetch 1 |
+| MCP-Guard Head-Only | BraveSearch 5, Financial Dataset 5, Claude Post 4 |
+| Base E5 Full | Claude Post 1 |
+| Base E5 Head-Only | Financial Dataset 15, Claude Post 5 |
+| MCP-Guardian | none |
+
+What MCP Guardian caught, and with which rules:
+
+| Risk category | Caught / n | Rules that fired (cases) |
+|---|---:|---|
+| Credential Leakage * | 78 / 115 | `ssh_key` 51, `env_secret` 18, `sensitive_file` 13 |
+| Financial Loss * | 0 / 55 | none |
+| Instruction Tampering * | 4 / 57 | `rm_rf` 3, `ssh_key` 1 |
+
+### 5.8 Would Stage III have mattered?
+
+Paper-mode Stage III only sees Stage II scores between 0.45 and 0.55:
+- Frozen MCP-Guard: 0 of 291 held-out scores fall in that band. Every held-out poisoned case scores ≥ 0.995.
+- The 20 fine-tuned checkpoints together: 16 of 5,420 scores fall in the band (0.3%), mostly from the head-only models.
+
+Stage III could therefore change at most a handful of decisions.
+
+## 6. Results on the whole test split (446 rows)
+
+### 6.1 Precision, recall, F1, confusion matrix
+
+**Stage I + II**
+
+| Model | Accuracy | Precision | Recall | F1 | FPR (all clean) | FPR (non-empty clean) | TP | FP | FN | TN |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| Frozen MCP-Guard | 99.6 | 99.5 | 100.0 | 99.7 | 3.1 | 4.5 | 382 | 2 | 0 | 62 |
+| MCP-Guard Full | 99.8 ± 0.2 | 99.7 ± 0.2 | 100.0 ± 0.0 | 99.9 ± 0.1 | 1.6 ± 1.1 | 2.3 ± 1.6 | 382.0 | 1.0 | 0.0 | 63.0 |
+| MCP-Guard Head-Only | 99.4 ± 0.4 | 99.3 ± 0.4 | 100.0 ± 0.0 | 99.6 ± 0.2 | 4.4 ± 2.6 | 6.4 ± 3.7 | 382.0 | 2.8 | 0.0 | 61.2 |
+| Base E5 Full | 100.0 ± 0.1 | 99.9 ± 0.1 | 100.0 ± 0.0 | 100.0 ± 0.1 | 0.3 ± 0.7 | 0.5 ± 1.0 | 382.0 | 0.2 | 0.0 | 63.8 |
+| Base E5 Head-Only | 98.5 ± 0.5 | 99.0 ± 0.4 | 99.3 ± 0.2 | 99.1 ± 0.3 | 6.2 ± 2.5 | 9.1 ± 3.6 | 379.4 | 4.0 | 2.6 | 60.0 |
+| MCP-Guardian | 34.1 | 100.0 | 23.0 | 37.4 | 0.0 | 0.0 | 88 | 0 | 294 | 64 |
+
+**Stage II alone**
+
+| Model | Accuracy | Precision | Recall | F1 | FPR (all clean) | FPR (non-empty clean) | TP | FP | FN | TN |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| Frozen MCP-Guard | 99.3 | 99.5 | 99.7 | 99.6 | 3.1 | 4.5 | 381 | 2 | 1 | 62 |
+| MCP-Guard Full | 99.7 ± 0.2 | 99.7 ± 0.2 | 99.9 ± 0.1 | 99.8 ± 0.1 | 1.6 ± 1.1 | 2.3 ± 1.6 | 381.8 | 1.0 | 0.2 | 63.0 |
+| MCP-Guard Head-Only | 99.0 ± 0.2 | 99.3 ± 0.4 | 99.5 ± 0.2 | 99.4 ± 0.1 | 4.4 ± 2.6 | 6.4 ± 3.7 | 380.2 | 2.8 | 1.8 | 61.2 |
+| Base E5 Full | 99.9 ± 0.1 | 99.9 ± 0.1 | 99.9 ± 0.1 | 99.9 ± 0.1 | 0.3 ± 0.7 | 0.5 ± 1.0 | 381.8 | 0.2 | 0.2 | 63.8 |
+| Base E5 Head-Only | 96.7 ± 0.7 | 98.9 ± 0.4 | 97.2 ± 0.5 | 98.1 ± 0.4 | 6.2 ± 2.5 | 9.1 ± 3.6 | 371.4 | 4.0 | 10.6 | 60.0 |
+| MCP-Guardian | 34.1 | 100.0 | 23.0 | 37.4 | 0.0 | 0.0 | 88 | 0 | 294 | 64 |
+
+### 6.2 By test cell (recall)
+
+**Stage I + II**
+
+| Model | known_server_new_cat (n=194) | new_server_known_cat (n=155) | new_server_new_cat (n=33) |
+|---|---:|---:|---:|
+| Frozen MCP-Guard | 100.0 | 100.0 | 100.0 |
+| MCP-Guard Full | 100.0 ± 0.0 | 100.0 ± 0.0 | 100.0 ± 0.0 |
+| MCP-Guard Head-Only | 100.0 ± 0.0 | 100.0 ± 0.0 | 100.0 ± 0.0 |
+| Base E5 Full | 100.0 ± 0.0 | 100.0 ± 0.0 | 100.0 ± 0.0 |
+| Base E5 Head-Only | 98.9 ± 0.2 | 99.9 ± 0.3 | 99.4 ± 1.4 |
+| MCP-Guardian | 39.7 | 3.9 | 15.2 |
+
+**Stage II alone**
+
+| Model | known_server_new_cat (n=194) | new_server_known_cat (n=155) | new_server_new_cat (n=33) |
+|---|---:|---:|---:|
+| Frozen MCP-Guard | 100.0 | 99.4 | 100.0 |
+| MCP-Guard Full | 100.0 ± 0.0 | 99.9 ± 0.3 | 100.0 ± 0.0 |
+| MCP-Guard Head-Only | 100.0 ± 0.0 | 98.8 ± 0.5 | 100.0 ± 0.0 |
+| Base E5 Full | 99.9 ± 0.2 | 100.0 ± 0.0 | 100.0 ± 0.0 |
+| Base E5 Head-Only | 94.8 ± 0.6 | 99.7 ± 0.6 | 99.4 ± 1.4 |
+| MCP-Guardian | 39.7 | 3.9 | 15.2 |
+
+### 6.3 By risk category, all ten (recall; * = held out)
+
+**Stage I + II**
+
+| Model | Code Injection (n=9) | Credential Leakage * (n=115) | Data Tampering (n=19) | Financial Loss * (n=55) | Information Manipulation (n=43) | Infrastructure Damage (n=10) | Instruction Tampering * (n=57) | Message Hijacking (n=6) | Privacy Leakage (n=42) | Service Disruption (n=26) | **Combined (pooled)** | Unweighted mean |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| Frozen MCP-Guard | 100.0 | 100.0 | 100.0 | 100.0 | 100.0 | 100.0 | 100.0 | 100.0 | 100.0 | 100.0 | **100.0** | 100.0 |
+| MCP-Guard Full | 100.0 ± 0.0 | 100.0 ± 0.0 | 100.0 ± 0.0 | 100.0 ± 0.0 | 100.0 ± 0.0 | 100.0 ± 0.0 | 100.0 ± 0.0 | 100.0 ± 0.0 | 100.0 ± 0.0 | 100.0 ± 0.0 | **100.0 ± 0.0** | 100.0 ± 0.0 |
+| MCP-Guard Head-Only | 100.0 ± 0.0 | 100.0 ± 0.0 | 100.0 ± 0.0 | 100.0 ± 0.0 | 100.0 ± 0.0 | 100.0 ± 0.0 | 100.0 ± 0.0 | 100.0 ± 0.0 | 100.0 ± 0.0 | 100.0 ± 0.0 | **100.0 ± 0.0** | 100.0 ± 0.0 |
+| Base E5 Full | 100.0 ± 0.0 | 100.0 ± 0.0 | 100.0 ± 0.0 | 100.0 ± 0.0 | 100.0 ± 0.0 | 100.0 ± 0.0 | 100.0 ± 0.0 | 100.0 ± 0.0 | 100.0 ± 0.0 | 100.0 ± 0.0 | **100.0 ± 0.0** | 100.0 ± 0.0 |
+| Base E5 Head-Only | 97.8 ± 5.0 | 99.8 ± 0.4 | 100.0 ± 0.0 | 96.0 ± 0.8 | 100.0 ± 0.0 | 100.0 ± 0.0 | 100.0 ± 0.0 | 100.0 ± 0.0 | 100.0 ± 0.0 | 100.0 ± 0.0 | **99.3 ± 0.2** | 99.4 ± 0.6 |
+| MCP-Guardian | 0.0 | 67.8 | 0.0 | 0.0 | 0.0 | 0.0 | 7.0 | 0.0 | 14.3 | 0.0 | **23.0** | 8.9 |
+
+**Stage II alone**
+
+| Model | Code Injection (n=9) | Credential Leakage * (n=115) | Data Tampering (n=19) | Financial Loss * (n=55) | Information Manipulation (n=43) | Infrastructure Damage (n=10) | Instruction Tampering * (n=57) | Message Hijacking (n=6) | Privacy Leakage (n=42) | Service Disruption (n=26) | **Combined (pooled)** | Unweighted mean |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| Frozen MCP-Guard | 100.0 | 100.0 | 100.0 | 100.0 | 100.0 | 100.0 | 100.0 | 100.0 | 100.0 | 96.2 | **99.7** | 99.6 |
+| MCP-Guard Full | 100.0 ± 0.0 | 100.0 ± 0.0 | 100.0 ± 0.0 | 100.0 ± 0.0 | 100.0 ± 0.0 | 100.0 ± 0.0 | 100.0 ± 0.0 | 100.0 ± 0.0 | 100.0 ± 0.0 | 99.2 ± 1.7 | **99.9 ± 0.1** | 99.9 ± 0.2 |
+| MCP-Guard Head-Only | 100.0 ± 0.0 | 100.0 ± 0.0 | 100.0 ± 0.0 | 100.0 ± 0.0 | 100.0 ± 0.0 | 100.0 ± 0.0 | 100.0 ± 0.0 | 100.0 ± 0.0 | 98.6 ± 1.3 | 95.4 ± 1.7 | **99.5 ± 0.2** | 99.4 ± 0.3 |
+| Base E5 Full | 100.0 ± 0.0 | 100.0 ± 0.0 | 100.0 ± 0.0 | 99.6 ± 0.8 | 100.0 ± 0.0 | 100.0 ± 0.0 | 100.0 ± 0.0 | 100.0 ± 0.0 | 100.0 ± 0.0 | 100.0 ± 0.0 | **99.9 ± 0.1** | 100.0 ± 0.1 |
+| Base E5 Head-Only | 97.8 ± 5.0 | 97.6 ± 0.7 | 100.0 ± 0.0 | 86.5 ± 1.0 | 100.0 ± 0.0 | 98.0 ± 4.5 | 100.0 ± 0.0 | 100.0 ± 0.0 | 100.0 ± 0.0 | 100.0 ± 0.0 | **97.2 ± 0.5** | 98.0 ± 1.1 |
+| MCP-Guardian | 0.0 | 67.8 | 0.0 | 0.0 | 0.0 | 0.0 | 7.0 | 0.0 | 14.3 | 0.0 | **23.0** | 8.9 |
+
+### 6.4 By attack type (recall, Stage I + II)
+
+| Model | P1 (n=56) | P2 (n=147) | P3 (n=179) |
+|---|---:|---:|---:|
+| Frozen MCP-Guard | 100.0 | 100.0 | 100.0 |
+| MCP-Guard Full | 100.0 ± 0.0 | 100.0 ± 0.0 | 100.0 ± 0.0 |
+| MCP-Guard Head-Only | 100.0 ± 0.0 | 100.0 ± 0.0 | 100.0 ± 0.0 |
+| Base E5 Full | 100.0 ± 0.0 | 100.0 ± 0.0 | 100.0 ± 0.0 |
+| Base E5 Head-Only | 96.1 ± 0.8 | 100.0 ± 0.0 | 99.8 ± 0.3 |
+| MCP-Guardian | 33.9 | 40.1 | 5.6 |
+
+### 6.5 MCP Guardian rules on the whole test split
+
+| Risk category | Caught / n | Rules that fired (cases) |
+|---|---:|---|
+| Credential Leakage * | 78 / 115 | `ssh_key` 51, `env_secret` 18, `sensitive_file` 13 |
+| Financial Loss * | 0 / 55 | none |
+| Instruction Tampering * | 4 / 57 | `rm_rf` 3, `ssh_key` 1 |
+| Code Injection | 0 / 9 | none |
+| Data Tampering | 0 / 19 | none |
+| Information Manipulation | 0 / 43 | none |
+| Infrastructure Damage | 0 / 10 | none |
+| Message Hijacking | 0 / 6 | none |
+| Privacy Leakage | 6 / 42 | `sensitive_file` 6 |
+| Service Disruption | 0 / 26 | none |
+
+## 7. Dev reference: val (seen categories, val servers)
+
+**Stage I + II**
+
+| Model | Accuracy | Precision | Recall | F1 | FPR (all clean) | FPR (non-empty clean) | TP | FP | FN | TN |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| Frozen MCP-Guard | 92.7 | 91.4 | 100.0 | 95.5 | 32.7 | 32.7 | 171 | 16 | 0 | 33 |
+| MCP-Guard Full | 93.2 ± 0.5 | 91.9 ± 0.5 | 100.0 ± 0.0 | 95.8 ± 0.3 | 30.6 ± 2.0 | 30.6 ± 2.0 | 171.0 | 15.0 | 0.0 | 34.0 |
+| MCP-Guard Head-Only | 92.6 ± 0.2 | 91.3 ± 0.2 | 100.0 ± 0.0 | 95.5 ± 0.1 | 33.1 ± 0.9 | 33.1 ± 0.9 | 171.0 | 16.2 | 0.0 | 32.8 |
+| Base E5 Full | 94.5 ± 0.2 | 93.3 ± 0.2 | 100.0 ± 0.0 | 96.6 ± 0.1 | 24.9 ± 0.9 | 24.9 ± 0.9 | 171.0 | 12.2 | 0.0 | 36.8 |
+| Base E5 Head-Only | 93.3 ± 0.4 | 92.0 ± 0.4 | 100.0 ± 0.0 | 95.9 ± 0.2 | 30.2 ± 1.7 | 30.2 ± 1.7 | 171.0 | 14.8 | 0.0 | 34.2 |
+| MCP-Guardian | 32.7 | 100.0 | 13.5 | 23.7 | 0.0 | 0.0 | 23 | 0 | 148 | 49 |
+
+**Stage II alone**
+
+| Model | Accuracy | Precision | Recall | F1 | FPR (all clean) | FPR (non-empty clean) | TP | FP | FN | TN |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| Frozen MCP-Guard | 92.7 | 91.9 | 99.4 | 95.5 | 30.6 | 30.6 | 170 | 15 | 1 | 34 |
+| MCP-Guard Full | 94.5 ± 1.0 | 93.5 ± 1.1 | 100.0 ± 0.0 | 96.6 ± 0.6 | 24.5 ± 4.3 | 24.5 ± 4.3 | 171.0 | 12.0 | 0.0 | 37.0 |
+| MCP-Guard Head-Only | 92.6 ± 0.2 | 91.8 ± 0.2 | 99.4 ± 0.0 | 95.5 ± 0.1 | 31.0 ± 0.9 | 31.0 ± 0.9 | 170.0 | 15.2 | 1.0 | 33.8 |
+| Base E5 Full | 99.7 ± 0.4 | 99.7 ± 0.5 | 100.0 ± 0.0 | 99.8 ± 0.3 | 1.2 ± 1.8 | 1.2 ± 1.8 | 171.0 | 0.6 | 0.0 | 48.4 |
+| Base E5 Head-Only | 96.2 ± 0.4 | 96.1 ± 0.7 | 99.1 ± 0.5 | 97.6 ± 0.3 | 13.9 ± 2.7 | 13.9 ± 2.7 | 169.4 | 6.8 | 1.6 | 42.2 |
+| MCP-Guardian | 32.7 | 100.0 | 13.5 | 23.7 | 0.0 | 0.0 | 23 | 0 | 148 | 49 |
+
+Recall by category on val (Stage I + II):
+
+| Model | Code Injection (n=8) | Data Tampering (n=17) | Information Manipulation (n=40) | Infrastructure Damage (n=27) | Message Hijacking (n=7) | Privacy Leakage (n=42) | Service Disruption (n=30) | **Combined (pooled)** | Unweighted mean |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| Frozen MCP-Guard | 100.0 | 100.0 | 100.0 | 100.0 | 100.0 | 100.0 | 100.0 | **100.0** | 100.0 |
+| MCP-Guard Full | 100.0 ± 0.0 | 100.0 ± 0.0 | 100.0 ± 0.0 | 100.0 ± 0.0 | 100.0 ± 0.0 | 100.0 ± 0.0 | 100.0 ± 0.0 | **100.0 ± 0.0** | 100.0 ± 0.0 |
+| MCP-Guard Head-Only | 100.0 ± 0.0 | 100.0 ± 0.0 | 100.0 ± 0.0 | 100.0 ± 0.0 | 100.0 ± 0.0 | 100.0 ± 0.0 | 100.0 ± 0.0 | **100.0 ± 0.0** | 100.0 ± 0.0 |
+| Base E5 Full | 100.0 ± 0.0 | 100.0 ± 0.0 | 100.0 ± 0.0 | 100.0 ± 0.0 | 100.0 ± 0.0 | 100.0 ± 0.0 | 100.0 ± 0.0 | **100.0 ± 0.0** | 100.0 ± 0.0 |
+| Base E5 Head-Only | 100.0 ± 0.0 | 100.0 ± 0.0 | 100.0 ± 0.0 | 100.0 ± 0.0 | 100.0 ± 0.0 | 100.0 ± 0.0 | 100.0 ± 0.0 | **100.0 ± 0.0** | 100.0 ± 0.0 |
+| MCP-Guardian | 100.0 | 35.3 | 7.5 | 0.0 | 0.0 | 14.3 | 0.0 | **13.5** | 22.4 |
+
+Clean val tools flagged (Stage I + II): the false positives come from two servers, Commander (via Stage I rules) and Codacy (via Stage II):
+
+| Model | Clean tools flagged, by server (summed over seeds) |
+|---|---|
+| Frozen MCP-Guard | Commander 12, Codacy 4 |
+| MCP-Guard Full | Commander 60, Codacy 15 |
+| MCP-Guard Head-Only | Commander 60, Codacy 20, wechat 1 |
+| Base E5 Full | Commander 61 |
+| Base E5 Head-Only | Commander 65, Codacy 9 |
+| MCP-Guardian | none |
+
+## 8. val → held-out → whole test
+
+**Stage I + II**
+
+| Model | Recall val | Recall held-out | Recall test | F1 val | F1 held-out | F1 test | FPR val (49 clean) | FPR test (64 clean) |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| Frozen MCP-Guard | 100.0 | 100.0 | 100.0 | 95.5 | 99.6 | 99.7 | 32.7 | 3.1 |
+| MCP-Guard Full | 100.0 ± 0.0 | 100.0 ± 0.0 | 100.0 ± 0.0 | 95.8 ± 0.3 | 99.8 ± 0.2 | 99.9 ± 0.1 | 30.6 ± 2.0 | 1.6 ± 1.1 |
+| MCP-Guard Head-Only | 100.0 ± 0.0 | 100.0 ± 0.0 | 100.0 ± 0.0 | 95.5 ± 0.1 | 99.4 ± 0.4 | 99.6 ± 0.2 | 33.1 ± 0.9 | 4.4 ± 2.6 |
+| Base E5 Full | 100.0 ± 0.0 | 100.0 ± 0.0 | 100.0 ± 0.0 | 96.6 ± 0.1 | 100.0 ± 0.1 | 100.0 ± 0.1 | 24.9 ± 0.9 | 0.3 ± 0.7 |
+| Base E5 Head-Only | 100.0 ± 0.0 | 98.9 ± 0.2 | 99.3 ± 0.2 | 95.9 ± 0.2 | 98.6 ± 0.4 | 99.1 ± 0.3 | 30.2 ± 1.7 | 6.2 ± 2.5 |
+| MCP-Guardian | 13.5 | 36.1 | 23.0 | 23.7 | 53.1 | 37.4 | 0.0 | 0.0 |
+
+**Stage II alone**
+
+| Model | Recall val | Recall held-out | Recall test | F1 val | F1 held-out | F1 test | FPR val (49 clean) | FPR test (64 clean) |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| Frozen MCP-Guard | 99.4 | 100.0 | 99.7 | 95.5 | 99.6 | 99.6 | 30.6 | 3.1 |
+| MCP-Guard Full | 100.0 ± 0.0 | 100.0 ± 0.0 | 99.9 ± 0.1 | 96.6 ± 0.6 | 99.8 ± 0.2 | 99.8 ± 0.1 | 24.5 ± 4.3 | 1.6 ± 1.1 |
+| MCP-Guard Head-Only | 99.4 ± 0.0 | 100.0 ± 0.0 | 99.5 ± 0.2 | 95.5 ± 0.1 | 99.4 ± 0.4 | 99.4 ± 0.1 | 31.0 ± 0.9 | 4.4 ± 2.6 |
+| Base E5 Full | 100.0 ± 0.0 | 99.9 ± 0.2 | 99.9 ± 0.1 | 99.8 ± 0.3 | 99.9 ± 0.1 | 99.9 ± 0.1 | 1.2 ± 1.8 | 0.3 ± 0.7 |
+| Base E5 Head-Only | 99.1 ± 0.5 | 95.5 ± 0.6 | 97.2 ± 0.5 | 97.6 ± 0.3 | 96.8 ± 0.5 | 98.1 ± 0.4 | 13.9 ± 2.7 | 6.2 ± 2.5 |
+| MCP-Guardian | 13.5 | 36.1 | 23.0 | 23.7 | 53.1 | 37.4 | 0.0 | 0.0 |
+
+Recall on held-out categories is as high as on val for every learned model. Only Base E5 Head-Only drops: by 1.1 points with Stage I + II and by 3.6 with Stage II alone. F1 rises from val to test only because FPR falls, and FPR falls because the clean tools come from different servers (Section 9).
+
+## 9. Answers to the analysis questions
+
+1. **Which model has the highest combined held-out accuracy?** Four models tie at 100%: Frozen MCP-Guard, MCP-Guard Full, MCP-Guard Head-Only and Base E5 Full. Once clean tools count, **Base E5 Full** is best: F1 100.0 ± 0.1, 0.2 of 64 clean tools flagged. MCP-Guard Full flags 1.0, Frozen 2, MCP-Guard Head-Only 2.8 and Base E5 Head-Only 4.0. These gaps are 1–4 tools out of 64, within the uncertainty in Section 4.
+2. **Full or head-only fine-tuning?** Full fine-tuning is at least as good everywhere.
+   - Base E5 Head-Only is the only learned model that misses held-out attacks: 2.4 per seed with Stage I + II, 10.2 with Stage II alone. Almost all of its misses are P1 cases, mostly Financial Loss (Stage II alone P1 recall 76.7%).
+   - It also has the highest FPR (6.2%).
+   - MCP-Guard Head-Only flags more clean tools than MCP-Guard Full (2.8 vs 1.0).
+3. **MCP-Guard's security-trained encoder vs base E5?**
+   - Without any MCPTox training, MCP-Guard's encoder already reaches 100% held-out recall.
+   - With the encoder frozen (head-only), MCP-Guard's encoder beats E5: Stage II alone recall 100% vs 95.5%, FPR 4.4% vs 6.2%.
+   - With full fine-tuning the two converge, and E5 Full ends up with the fewest false positives.
+   - So the security pre-training helps most when the encoder can't be updated.
+4. **Rule-based MCP Guardian vs learned classifiers?** Guardian never flags a clean tool, with precision 100% wherever it flags anything. But it catches only 36.1% of held-out attacks and 23.0% of the whole test split.
+   - What it catches depends on topic overlap with its 11 rules. Credential Leakage (67.8%) comes almost entirely from `ssh_key`, `env_secret` and `sensitive_file`.
+   - Financial Loss (0%) matches no rule at all. Neither do 6 of the 7 seen categories on the test split (Section 6.5); on val it does catch Code Injection and some Data Tampering (Section 7).
+   - Its higher score on held-out (36.1%) than on val (13.5%) reflects which categories its rules happen to cover. It is not generalization.
+5. **Which held-out category is hardest?** **Financial Loss**: 0% for Guardian, 96.0% for Base E5 Head-Only (86.5% with Stage II alone), and the source of most head-only misses. Instruction Tampering is hard only for Guardian (7.0%). Credential Leakage is the easiest for Guardian (67.8%), and every learned model scores 99.8–100% on both Credential Leakage and Instruction Tampering.
+
+## 10. Why these numbers do not show strong generalization
+
+- **Shared templates.** Stage I alone blocks 178 of 227 held-out cases, mostly through the `shell_injection` and `important_tag` rules, the same template cues it fires on in training data. A category label changes *what* an attack asks for, not *how* MCPTox phrases it.
+- **No training needed.** MCP-Guard as released, never trained on MCPTox, scores the same 100% as models trained on it. The category split therefore can't distinguish learning attacks from recognizing the template.
+- **The FPR change is a server effect.** FPR falls from ~25–33% on val to ~0–6% on test because the clean tools come from different servers: Commander and Codacy on val; Claude Post, BraveSearch and Financial Dataset on test. It says nothing about categories.
+- **Small, partly empty clean set.** There are only 64 clean test tools, 20 of them with empty descriptions, and MCP-Guard allows those automatically. The FPR over non-empty tools is about 1.5× higher.
+- **Length shortcut not ruled out.** Clean descriptions are much shorter than poisoned ones (median 14 vs 60 tokens on `tune`). A length-matched check is still open.
+- **Test split now used.** The whole test split has been scored, so no untouched test data remains for a later "final" run.
+
+**Conclusion for the paper:** on MCPTox, held-out categories are close to in-distribution for every learned detector. Report this result as an upper bound. The generalization claim should rest on Experiment 2 (rewritten attacks) and Experiment 3 (live servers).
+
+## 11. Files and reproduction
+
+| What | Where |
+|---|---|
+| This analysis | `experiments/rq1_heldout/RESULTS.md` |
+| Code, tests, CARC jobs | `experiments/rq1_heldout/{evaluate.py,report.py,test_evaluate.py,carc/}` |
+| Generated tables | `results/rq1_heldout/report.md` (held-out), `results/rq1_heldout/report_test.md` (whole test) |
+| Per model and configuration (seed mean ± std) | `results/rq1_heldout/<split>/summary.{csv,json}` |
+| Per run, including each seed | `results/rq1_heldout/<split>/runs.csv` |
+| Per run detail: checkpoint, counts, metrics, confusion matrix, time, errors | `results/rq1_heldout/<split>/<model>/<config>[_seed<k>]/{metrics.json,log.txt}` |
+| Sample-level predictions (case ID, label, prediction, stage, score, rules; no text) | `.../predictions.jsonl` |
+| Checkpoints | CARC `/project2/xiangren_1987/group_12/checkpoints/mcp_guard/` (20 × 1.1 GB; too large for GitHub) |
+
+`results/` is gitignored, per the team rule. Rerun with the commands in [README.md](README.md). `<split>` is `heldout`, `test` or `val`.
