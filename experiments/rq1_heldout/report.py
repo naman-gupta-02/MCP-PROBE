@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import argparse
 import json
+from pathlib import Path
 
 from detectors.mcp_guard.pipeline import ROOT
 
@@ -55,7 +56,11 @@ def ranked_table(L: list[str], rs: list[dict], cols: list[tuple[str, str]], comb
 def main() -> None:
     ap = argparse.ArgumentParser(description="RQ1 comparison tables.")
     ap.add_argument("--split", default="heldout", choices=["heldout", "test"])
-    split = ap.parse_args().split
+    ap.add_argument("--out-root", type=Path, help="results dir (default results/rq1_heldout)")
+    args = ap.parse_args()
+    split = args.split
+    global OUT
+    OUT = args.out_root or OUT
     held, val = load(split), load("val")
     if held is None:
         raise SystemExit(f"results/rq1_heldout/{split}/summary.json missing; run evaluate --split {split} first")
@@ -69,7 +74,7 @@ def main() -> None:
         counts = {c: int(any_row[f"n[{c}]"]) for c in cats}
         n_pos = sum(counts.values())
         L = ["# RQ1: held-out MCPTox categories", "",
-             f"Held-out categories (from `data/splits/server_split.json`): "
+             "Held-out categories: "
              + ", ".join(f"C{i + 1} = {c} (n={counts[c]})" for i, c in enumerate(cats))
              + f". Pooled: {n_pos} poisoned cases. Clean test tools: {n_clean}.", "",
              "Every held-out case is poisoned, so category accuracy = recall (a block-everything detector "
@@ -132,7 +137,7 @@ def main() -> None:
     out = OUT / ("report.md" if split == "heldout" else "report_test.md")
     out.write_text("\n".join(L), encoding="utf-8")
     print("\n".join(L))
-    print(f"wrote {out.relative_to(ROOT)}")
+    print(f"wrote {out}")
 
 
 if __name__ == "__main__":

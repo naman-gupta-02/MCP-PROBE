@@ -53,3 +53,31 @@ Run the test job after the held-out one (`--dependency`): both write the shared 
 - `report_test.md`: the same for the whole test split, with recall by test cell and by all ten risk categories.
 
 A run that fails (for example, a missing checkpoint) is recorded with `status: error` and its message. No numbers are filled in for it.
+
+## Robustness check: other held-out combinations (branch `rq1/heldout-split2`)
+
+To check that the RQ1 result is not specific to the three categories above, the whole pipeline is repeated on 8 other 3-category hold-outs: build the split, **retrain** the 20 fine-tuned models on that split's `tune`, score all six detectors on its val / held-out / whole test, and summarize.
+
+- **Selection** ([combos.py](combos.py), fixed before any results). The pool is the 7 categories not held out in the first run (`Other`, 4 cases, excluded). We drew 8 of the 35 three-category combinations at random with seed 2026, redrawing until each category is held out 3–4 times. The draw is in [combos/combos.json](combos/combos.json), and each combination has its own split file `combos/c<k>.json`. Servers are the same as in `server_split.json`.
+- **Splits** are built by `scripts/build_splits.py`, unchanged: [combos.py](combos.py) only redirects its input and output paths. Rebuilding the original split this way reproduces `data/processed/` byte for byte.
+- **Per combination**, [run_combo.sh](run_combo.sh) trains each model, scores it, then deletes its checkpoint. It keeps `train_meta/<run>.json` and its log, and uses its own Stage II score cache.
+- **On CARC**, [carc/combos_array.slurm](carc/combos_array.slurm) is a job array with one A40 task per combination, up to 8 at once. Training uses the same settings as the first run (`detectors/mcp_guard/train.py` defaults).
+
+| Combo | Held-out categories |
+|---|---|
+| c1 | Code Injection, Data Tampering, Message Hijacking |
+| c2 | Code Injection, Data Tampering, Privacy Leakage |
+| c3 | Code Injection, Privacy Leakage, Service Disruption |
+| c4 | Data Tampering, Information Manipulation, Service Disruption |
+| c5 | Data Tampering, Infrastructure Damage, Privacy Leakage |
+| c6 | Information Manipulation, Infrastructure Damage, Message Hijacking |
+| c7 | Information Manipulation, Infrastructure Damage, Service Disruption |
+| c8 | Information Manipulation, Message Hijacking, Service Disruption |
+
+```bash
+sbatch experiments/rq1_heldout/carc/combos_array.slurm          # all 8 on CARC
+bash experiments/rq1_heldout/run_combo.sh c3                    # one combo locally (DEVICE=mps|cpu|cuda)
+uv run python -m experiments.rq1_heldout.combos_report          # all combos side by side -> results/rq1_combos/combos_report.md
+```
+
+Outputs go to `results/rq1_combos/<combo>/` (gitignored), with the same layout as `results/rq1_heldout/` plus `data/`, `split_report.md` and `train_meta/`.

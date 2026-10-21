@@ -52,8 +52,8 @@ def set_seed(seed: int) -> None:
     torch.cuda.manual_seed_all(seed)
 
 
-def load_split(split: str) -> tuple[list[str], list[int]]:
-    cases = [c for c in load_cases(split) if c["description"] and c["description"].strip()]
+def load_split(split: str, data_dir: Path | None = None) -> tuple[list[str], list[int]]:
+    cases = [c for c in load_cases(split, data_dir) if c["description"] and c["description"].strip()]
     return [_norm(c["description"]) for c in cases], [int(c["is_poisoned"]) for c in cases]
 
 
@@ -106,6 +106,7 @@ def main() -> None:
     ap.add_argument("--limit", type=int, help="first N tune/val cases only (smoke tests)")
     ap.add_argument("--device", default="auto")
     ap.add_argument("--out-root", default=str(ROOT / "results" / "mcp_guard" / "finetune"))
+    ap.add_argument("--data-dir", type=Path, help="processed split dir (default data/processed), e.g. an RQ1 combo")
     args = ap.parse_args()
 
     lr = args.lr or DEFAULTS[args.scope][0]
@@ -113,8 +114,8 @@ def main() -> None:
     set_seed(args.seed)
     device = pick_device(args.device)
 
-    x_tr, y_tr = load_split("tune")
-    x_va, y_va = load_split("val")
+    x_tr, y_tr = load_split("tune", args.data_dir)
+    x_va, y_va = load_split("val", args.data_dir)
     if args.limit:
         x_tr, y_tr, x_va, y_va = x_tr[: args.limit], y_tr[: args.limit], x_va[: args.limit], y_va[: args.limit]
     n_pos, n_neg = sum(y_tr), len(y_tr) - sum(y_tr)
@@ -190,6 +191,7 @@ def main() -> None:
         "class_weights": w.tolist(), "max_length": MAX_LENGTH, "select_metric": args.select_metric,
         "best_epoch": best_epoch, "best_val": history[best_epoch]["val"] if best_epoch is not None else None,
         "history": history, "source": source, "train_split": "tune", "selection_split": "val",
+        "data_dir": str(args.data_dir) if args.data_dir else "data/processed",
         "n_train": len(y_tr), "n_val": len(y_va), "limit": args.limit, "git_commit": git_commit(),
         "train_seconds": time.perf_counter() - t_start, "device": str(device),
     }

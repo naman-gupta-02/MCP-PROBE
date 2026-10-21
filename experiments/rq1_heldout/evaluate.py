@@ -45,7 +45,9 @@ from detectors.mcp_guard.pipeline import DEFAULT_CONFIG, ROOT, MCPGuard
 from detectors.mcp_guardian.team_split import _to_example
 from detectors.mcp_guardian.waf import WafScanner
 
+# Overridable from the command line (--split-file, --data-dir, --out-root) for the held-out combos.
 SPLIT_FILE = ROOT / "data" / "splits" / "server_split.json"
+DATA_DIR: Path | None = None  # None -> data/processed
 OUT_ROOT = ROOT / "results" / "rq1_heldout"
 SEEDS = (0, 1, 2, 3, 4)
 
@@ -70,9 +72,9 @@ def held_out_categories() -> list[str]:
 
 def load_rows(split: str) -> list[dict]:
     if split in ("val", "test"):
-        return load_cases(split)
+        return load_cases(split, DATA_DIR)
     held = set(held_out_categories())
-    rows = [r for r in load_cases("test") if not r["is_poisoned"] or r["risk_category"] in held]
+    rows = [r for r in load_cases("test", DATA_DIR) if not r["is_poisoned"] or r["risk_category"] in held]
     n_pos = sum(r["is_poisoned"] for r in rows)
     assert all(r["risk_category"] in held for r in rows if r["is_poisoned"])
     print(f"heldout: {n_pos} poisoned (categories {sorted(held)}) + {len(rows) - n_pos} clean")
@@ -332,7 +334,7 @@ def summarize(split: str, results: list[dict]) -> None:
         w.writeheader()
         for e in summary:
             w.writerow({k: (" | ".join(e[k]) if k == "errors" else e.get(k)) for k in sfields})
-    print(f"wrote {out.relative_to(ROOT)}/{{runs.csv,summary.csv,summary.json}}")
+    print(f"wrote {out}/{{runs.csv,summary.csv,summary.json}}")
 
 
 def main() -> None:
@@ -342,9 +344,16 @@ def main() -> None:
     ap.add_argument("--config", default=str(DEFAULT_CONFIG))
     ap.add_argument("--models", default=",".join(MODELS), help="comma list of model keys")
     ap.add_argument("--seeds", default=",".join(map(str, SEEDS)))
+    ap.add_argument("--split-file", type=Path, help="split definition (default data/splits/server_split.json)")
+    ap.add_argument("--data-dir", type=Path, help="processed split dir (default data/processed)")
+    ap.add_argument("--out-root", type=Path, help="results dir (default results/rq1_heldout)")
     ap.add_argument("--summarize-only", action="store_true",
                     help="rebuild runs.csv/summary.* from every saved run of this split (no scoring)")
     args = ap.parse_args()
+    global SPLIT_FILE, DATA_DIR, OUT_ROOT
+    SPLIT_FILE = args.split_file or SPLIT_FILE
+    DATA_DIR = args.data_dir or DATA_DIR
+    OUT_ROOT = args.out_root or OUT_ROOT
 
     if args.summarize_only:
         found = sorted((OUT_ROOT / args.split).glob("*/*/metrics.json"))

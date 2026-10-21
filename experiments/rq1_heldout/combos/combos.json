@@ -1,0 +1,65 @@
+{
+  "rule": "seeded random draw (seed 2026) of 8 of the 35 3-of-7 combinations, redrawn until each category is held out 3-4 times; pool excludes the first run's held-out categories and 'Other'",
+  "seed": 2026,
+  "attempts": 15,
+  "pool": [
+    "Code Injection",
+    "Data Tampering",
+    "Information Manipulation",
+    "Infrastructure Damage",
+    "Message Hijacking",
+    "Privacy Leakage",
+    "Service Disruption"
+  ],
+  "times_held_out": {
+    "Code Injection": 3,
+    "Data Tampering": 4,
+    "Information Manipulation": 4,
+    "Infrastructure Damage": 3,
+    "Message Hijacking": 3,
+    "Privacy Leakage": 3,
+    "Service Disruption": 4
+  },
+  "combos": {
+    "c1": [
+      "Code Injection",
+      "Data Tampering",
+      "Message Hijacking"
+    ],
+    "c2": [
+      "Code Injection",
+      "Data Tampering",
+      "Privacy Leakage"
+    ],
+    "c3": [
+      "Code Injection",
+      "Privacy Leakage",
+      "Service Disruption"
+    ],
+    "c4": [
+      "Data Tampering",
+      "Information Manipulation",
+      "Service Disruption"
+    ],
+    "c5": [
+      "Data Tampering",
+      "Infrastructure Damage",
+      "Privacy Leakage"
+    ],
+    "c6": [
+      "Information Manipulation",
+      "Infrastructure Damage",
+      "Message Hijacking"
+    ],
+    "c7": [
+      "Information Manipulation",
+      "Infrastructure Damage",
+      "Service Disruption"
+    ],
+    "c8": [
+      "Information Manipulation",
+      "Message Hijacking",
+      "Service Disruption"
+    ]
+  }
+}
