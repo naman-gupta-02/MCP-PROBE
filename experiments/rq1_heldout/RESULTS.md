@@ -74,12 +74,19 @@ The test split is divided into three test cells:
 3. **CARC attempt.**
    - Job `12930071` (2026-10-12) hit its 1-hour limit with no runs finished. Some cached model files on CARC's `/scratch1` storage hung on any access, a storage fault rather than our code.
    - The whole-test job `12930667` was put on hold.
-   - On 2026-10-16 the storage was readable again. We added a 2-minute startup check to the job script and resubmitted as `13203627`, with `12930667` chained after it. Both are still queued, left on purpose as an independent rerun.
+   - On 2026-10-16 the storage was readable again. We added a 2-minute startup check to the job script and resubmitted as `13203627`, with `12930667` chained after it.
 4. **Local run (2026-10-16), which produced every number below.**
    - Each of the 20 fine-tuned checkpoints was copied from CARC to a laptop (~40 s per 1.1 GB), scored on val, held-out and the whole test split (both configurations), then deleted.
    - Frozen MCP-Guard and Guardian need no download.
    - 129 runs in total (43 per row set), 0 errors, about 32 minutes, on CPU.
 5. **Cross-check.** All 21 val confusion matrices (Frozen + 20 checkpoints) are identical to the ones the CARC training sweep recorded on GPU for the same checkpoints.
+6. **Independent CARC rerun.** Both CARC jobs later completed on an A40 GPU at commit `900773f`:
+   - `13203627` (val + held-out) ran on 2026-10-17 in 5.5 min.
+   - `12930667` (whole test) ran on 2026-10-18 in 3.2 min.
+   - Together they cover the same 129 runs, with 0 errors.
+   - All 41,151 predictions are identical to the laptop run, Stage II scores differ by at most 2.2e-5, and both generated reports are byte-identical.
+
+   Every number below is therefore reproduced on CARC.
 
 ## 4. Metrics
 
