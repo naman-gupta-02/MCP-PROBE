@@ -73,6 +73,8 @@ def held_out_categories() -> list[str]:
 def load_rows(split: str) -> list[dict]:
     if split in ("val", "test"):
         return load_cases(split, DATA_DIR)
+    if split == "all":  # every MCPTox row (tune + val + test); only meaningful for untrained detectors
+        return [r for sp in ("tune", "val", "test") for r in load_cases(sp, DATA_DIR)]
     held = set(held_out_categories())
     rows = [r for r in load_cases("test", DATA_DIR) if not r["is_poisoned"] or r["risk_category"] in held]
     n_pos = sum(r["is_poisoned"] for r in rows)
@@ -155,11 +157,11 @@ def compute_metrics(rows: list[dict], preds: list[dict]) -> dict:
         },
         "by_paradigm_recall": {
             k: {"n": len(v), "correct": sum(p[i] for i in v), "recall": sum(p[i] for i in v) / len(v)}
-            for k, v in sorted(by_paradigm.items())
+            for k, v in sorted(by_paradigm.items(), key=lambda kv: str(kv[0]))
         },
         "by_test_cell_recall": {
             k: {"n": len(v), "correct": sum(p[i] for i in v), "recall": sum(p[i] for i in v) / len(v)}
-            for k, v in sorted(by_cell.items()) if k is not None
+            for k, v in sorted((kv for kv in by_cell.items() if kv[0] is not None), key=lambda kv: kv[0])
         },
         "decided_at_stage": dict(sorted(_count(x["stage"] for x in preds).items())),
     }
@@ -339,7 +341,8 @@ def summarize(split: str, results: list[dict]) -> None:
 
 def main() -> None:
     ap = argparse.ArgumentParser(description="RQ1: score all six detectors on held-out MCPTox categories.")
-    ap.add_argument("--split", required=True, choices=["heldout", "test", "val"])
+    ap.add_argument("--split", required=True, choices=["heldout", "test", "val", "all"],
+                    help="'all' = tune+val+test, for detectors never trained on MCPTox (frozen MCP-Guard, Guardian)")
     ap.add_argument("--ckpt-root", help="directory with <init>_<scope>_seed<k>/ from train.py")
     ap.add_argument("--config", default=str(DEFAULT_CONFIG))
     ap.add_argument("--models", default=",".join(MODELS), help="comma list of model keys")

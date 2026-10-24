@@ -1,0 +1,121 @@
+category,n_cases,held_out_in,config,model,recall_mean,recall_min,recall_max,n_splits
+Code Injection,63,c1; c2; c3,Stage I + II,Frozen MCP-Guard,1.0,1.0,1.0,3
+Code Injection,63,c1; c2; c3,Stage I + II,MCP-Guard Full,1.0,1.0,1.0,3
+Code Injection,63,c1; c2; c3,Stage I + II,MCP-Guard Head-Only,1.0,1.0,1.0,3
+Code Injection,63,c1; c2; c3,Stage I + II,Base E5 Full,0.9989417989417989,0.9968253968253968,1.0,3
+Code Injection,63,c1; c2; c3,Stage I + II,Base E5 Head-Only,0.9936507936507936,0.9904761904761904,1.0,3
+Code Injection,63,c1; c2; c3,rules,MCP-Guardian,0.12698412698412698,0.12698412698412698,0.12698412698412698,3
+Code Injection,63,c1; c2; c3,Stage II alone,Frozen MCP-Guard,1.0,1.0,1.0,3
+Code Injection,63,c1; c2; c3,Stage II alone,MCP-Guard Full,1.0,1.0,1.0,3
+Code Injection,63,c1; c2; c3,Stage II alone,MCP-Guard Head-Only,1.0,1.0,1.0,3
+Code Injection,63,c1; c2; c3,Stage II alone,Base E5 Full,0.9989417989417989,0.9968253968253968,1.0,3
+Code Injection,63,c1; c2; c3,Stage II alone,Base E5 Head-Only,0.9449735449735449,0.9396825396825397,0.9555555555555555,3
+Code Injection,63,c1; c2; c3,rules,MCP-Guardian,0.12698412698412698,0.12698412698412698,0.12698412698412698,3
+Credential Leakage,115,first run,Stage I + II,Frozen MCP-Guard,1.0,1.0,1.0,1
+Credential Leakage,115,first run,Stage I + II,MCP-Guard Full,1.0,1.0,1.0,1
+Credential Leakage,115,first run,Stage I + II,MCP-Guard Head-Only,1.0,1.0,1.0,1
+Credential Leakage,115,first run,Stage I + II,Base E5 Full,1.0,1.0,1.0,1
+Credential Leakage,115,first run,Stage I + II,Base E5 Head-Only,0.9982608695652174,0.9982608695652174,0.9982608695652174,1
+Credential Leakage,115,first run,rules,MCP-Guardian,0.6782608695652174,0.6782608695652174,0.6782608695652174,1
+Credential Leakage,115,first run,Stage II alone,Frozen MCP-Guard,1.0,1.0,1.0,1
+Credential Leakage,115,first run,Stage II alone,MCP-Guard Full,1.0,1.0,1.0,1
+Credential Leakage,115,first run,Stage II alone,MCP-Guard Head-Only,1.0,1.0,1.0,1
+Credential Leakage,115,first run,Stage II alone,Base E5 Full,1.0,1.0,1.0,1
+Credential Leakage,115,first run,Stage II alone,Base E5 Head-Only,0.9756521739130435,0.9756521739130435,0.9756521739130435,1
+Credential Leakage,115,first run,rules,MCP-Guardian,0.6782608695652174,0.6782608695652174,0.6782608695652174,1
+Data Tampering,117,c1; c2; c4; c5,Stage I + II,Frozen MCP-Guard,1.0,1.0,1.0,4
+Data Tampering,117,c1; c2; c4; c5,Stage I + II,MCP-Guard Full,1.0,1.0,1.0,4
+Data Tampering,117,c1; c2; c4; c5,Stage I + II,MCP-Guard Head-Only,0.9965811965811966,0.9914529914529915,1.0,4
+Data Tampering,117,c1; c2; c4; c5,Stage I + II,Base E5 Full,1.0,1.0,1.0,4
+Data Tampering,117,c1; c2; c4; c5,Stage I + II,Base E5 Head-Only,1.0,1.0,1.0,4
+Data Tampering,117,c1; c2; c4; c5,rules,MCP-Guardian,0.07692307692307693,0.07692307692307693,0.07692307692307693,4
+Data Tampering,117,c1; c2; c4; c5,Stage II alone,Frozen MCP-Guard,0.9829059829059829,0.9829059829059829,0.9829059829059829,4
+Data Tampering,117,c1; c2; c4; c5,Stage II alone,MCP-Guard Full,1.0,1.0,1.0,4
+Data Tampering,117,c1; c2; c4; c5,Stage II alone,MCP-Guard Head-Only,0.985042735042735,0.976068376068376,0.9931623931623932,4
+Data Tampering,117,c1; c2; c4; c5,Stage II alone,Base E5 Full,1.0,1.0,1.0,4
+Data Tampering,117,c1; c2; c4; c5,Stage II alone,Base E5 Head-Only,1.0,1.0,1.0,4
+Data Tampering,117,c1; c2; c4; c5,rules,MCP-Guardian,0.07692307692307693,0.07692307692307693,0.07692307692307693,4
+Financial Loss,55,first run,Stage I + II,Frozen MCP-Guard,1.0,1.0,1.0,1
+Financial Loss,55,first run,Stage I + II,MCP-Guard Full,1.0,1.0,1.0,1
+Financial Loss,55,first run,Stage I + II,MCP-Guard Head-Only,1.0,1.0,1.0,1
+Financial Loss,55,first run,Stage I + II,Base E5 Full,1.0,1.0,1.0,1
+Financial Loss,55,first run,Stage I + II,Base E5 Head-Only,0.96,0.96,0.96,1
+Financial Loss,55,first run,rules,MCP-Guardian,0.0,0.0,0.0,1
+Financial Loss,55,first run,Stage II alone,Frozen MCP-Guard,1.0,1.0,1.0,1
+Financial Loss,55,first run,Stage II alone,MCP-Guard Full,1.0,1.0,1.0,1
+Financial Loss,55,first run,Stage II alone,MCP-Guard Head-Only,1.0,1.0,1.0,1
+Financial Loss,55,first run,Stage II alone,Base E5 Full,0.9963636363636363,0.9963636363636363,0.9963636363636363,1
+Financial Loss,55,first run,Stage II alone,Base E5 Head-Only,0.8654545454545454,0.8654545454545454,0.8654545454545454,1
+Financial Loss,55,first run,rules,MCP-Guardian,0.0,0.0,0.0,1
+Information Manipulation,269,c4; c6; c7; c8,Stage I + II,Frozen MCP-Guard,0.9925650557620818,0.9925650557620818,0.9925650557620818,4
+Information Manipulation,269,c4; c6; c7; c8,Stage I + II,MCP-Guard Full,0.9968401486988847,0.9940520446096655,0.9992565055762082,4
+Information Manipulation,269,c4; c6; c7; c8,Stage I + II,MCP-Guard Head-Only,0.9925650557620818,0.9925650557620818,0.9925650557620818,4
+Information Manipulation,269,c4; c6; c7; c8,Stage I + II,Base E5 Full,1.0,1.0,1.0,4
+Information Manipulation,269,c4; c6; c7; c8,Stage I + II,Base E5 Head-Only,0.9998141263940521,0.9992565055762082,1.0,4
+Information Manipulation,269,c4; c6; c7; c8,rules,MCP-Guardian,0.011152416356877323,0.011152416356877323,0.011152416356877323,4
+Information Manipulation,269,c4; c6; c7; c8,Stage II alone,Frozen MCP-Guard,0.9814126394052045,0.9814126394052045,0.9814126394052045,4
+Information Manipulation,269,c4; c6; c7; c8,Stage II alone,MCP-Guard Full,0.9931226765799256,0.9866171003717472,0.9985130111524163,4
+Information Manipulation,269,c4; c6; c7; c8,Stage II alone,MCP-Guard Head-Only,0.9817843866171004,0.9814126394052045,0.9821561338289964,4
+Information Manipulation,269,c4; c6; c7; c8,Stage II alone,Base E5 Full,0.9996282527881041,0.9992565055762082,1.0,4
+Information Manipulation,269,c4; c6; c7; c8,Stage II alone,Base E5 Head-Only,0.9855018587360594,0.9769516728624535,0.9970260223048327,4
+Information Manipulation,269,c4; c6; c7; c8,rules,MCP-Guardian,0.011152416356877323,0.011152416356877323,0.011152416356877323,4
+Infrastructure Damage,122,c5; c6; c7,Stage I + II,Frozen MCP-Guard,1.0,1.0,1.0,3
+Infrastructure Damage,122,c5; c6; c7,Stage I + II,MCP-Guard Full,1.0,1.0,1.0,3
+Infrastructure Damage,122,c5; c6; c7,Stage I + II,MCP-Guard Head-Only,1.0,1.0,1.0,3
+Infrastructure Damage,122,c5; c6; c7,Stage I + II,Base E5 Full,0.9994535519125683,0.9983606557377049,1.0,3
+Infrastructure Damage,122,c5; c6; c7,Stage I + II,Base E5 Head-Only,1.0,1.0,1.0,3
+Infrastructure Damage,122,c5; c6; c7,rules,MCP-Guardian,0.1885245901639344,0.1885245901639344,0.1885245901639344,3
+Infrastructure Damage,122,c5; c6; c7,Stage II alone,Frozen MCP-Guard,0.7540983606557377,0.7540983606557377,0.7540983606557377,3
+Infrastructure Damage,122,c5; c6; c7,Stage II alone,MCP-Guard Full,0.773224043715847,0.7557377049180328,0.7918032786885246,3
+Infrastructure Damage,122,c5; c6; c7,Stage II alone,MCP-Guard Head-Only,0.7530054644808744,0.7491803278688525,0.759016393442623,3
+Infrastructure Damage,122,c5; c6; c7,Stage II alone,Base E5 Full,0.9754098360655737,0.9704918032786886,0.9836065573770492,3
+Infrastructure Damage,122,c5; c6; c7,Stage II alone,Base E5 Head-Only,0.9327868852459016,0.9065573770491803,0.9639344262295082,3
+Infrastructure Damage,122,c5; c6; c7,rules,MCP-Guardian,0.1885245901639344,0.1885245901639344,0.1885245901639344,3
+Instruction Tampering,57,first run,Stage I + II,Frozen MCP-Guard,1.0,1.0,1.0,1
+Instruction Tampering,57,first run,Stage I + II,MCP-Guard Full,1.0,1.0,1.0,1
+Instruction Tampering,57,first run,Stage I + II,MCP-Guard Head-Only,1.0,1.0,1.0,1
+Instruction Tampering,57,first run,Stage I + II,Base E5 Full,1.0,1.0,1.0,1
+Instruction Tampering,57,first run,Stage I + II,Base E5 Head-Only,1.0,1.0,1.0,1
+Instruction Tampering,57,first run,rules,MCP-Guardian,0.07017543859649122,0.07017543859649122,0.07017543859649122,1
+Instruction Tampering,57,first run,Stage II alone,Frozen MCP-Guard,1.0,1.0,1.0,1
+Instruction Tampering,57,first run,Stage II alone,MCP-Guard Full,1.0,1.0,1.0,1
+Instruction Tampering,57,first run,Stage II alone,MCP-Guard Head-Only,1.0,1.0,1.0,1
+Instruction Tampering,57,first run,Stage II alone,Base E5 Full,1.0,1.0,1.0,1
+Instruction Tampering,57,first run,Stage II alone,Base E5 Head-Only,1.0,1.0,1.0,1
+Instruction Tampering,57,first run,rules,MCP-Guardian,0.07017543859649122,0.07017543859649122,0.07017543859649122,1
+Message Hijacking,41,c1; c6; c8,Stage I + II,Frozen MCP-Guard,0.975609756097561,0.975609756097561,0.975609756097561,3
+Message Hijacking,41,c1; c6; c8,Stage I + II,MCP-Guard Full,1.0,1.0,1.0,3
+Message Hijacking,41,c1; c6; c8,Stage I + II,MCP-Guard Head-Only,0.9869918699186991,0.9853658536585366,0.9902439024390244,3
+Message Hijacking,41,c1; c6; c8,Stage I + II,Base E5 Full,1.0,1.0,1.0,3
+Message Hijacking,41,c1; c6; c8,Stage I + II,Base E5 Head-Only,1.0,1.0,1.0,3
+Message Hijacking,41,c1; c6; c8,rules,MCP-Guardian,0.0,0.0,0.0,3
+Message Hijacking,41,c1; c6; c8,Stage II alone,Frozen MCP-Guard,0.975609756097561,0.975609756097561,0.975609756097561,3
+Message Hijacking,41,c1; c6; c8,Stage II alone,MCP-Guard Full,0.9983739837398374,0.9951219512195122,1.0,3
+Message Hijacking,41,c1; c6; c8,Stage II alone,MCP-Guard Head-Only,0.9869918699186991,0.9853658536585366,0.9902439024390244,3
+Message Hijacking,41,c1; c6; c8,Stage II alone,Base E5 Full,1.0,1.0,1.0,3
+Message Hijacking,41,c1; c6; c8,Stage II alone,Base E5 Head-Only,0.9934959349593496,0.9853658536585366,1.0,3
+Message Hijacking,41,c1; c6; c8,rules,MCP-Guardian,0.0,0.0,0.0,3
+Privacy Leakage,273,c2; c3; c5,Stage I + II,Frozen MCP-Guard,0.989010989010989,0.989010989010989,0.989010989010989,3
+Privacy Leakage,273,c2; c3; c5,Stage I + II,MCP-Guard Full,0.9965811965811966,0.9948717948717949,0.9985347985347985,3
+Privacy Leakage,273,c2; c3; c5,Stage I + II,MCP-Guard Head-Only,0.989010989010989,0.989010989010989,0.989010989010989,3
+Privacy Leakage,273,c2; c3; c5,Stage I + II,Base E5 Full,0.9953601953601954,0.9941391941391942,0.9963369963369964,3
+Privacy Leakage,273,c2; c3; c5,Stage I + II,Base E5 Head-Only,0.9973137973137973,0.9948717948717949,1.0,3
+Privacy Leakage,273,c2; c3; c5,rules,MCP-Guardian,0.09523809523809523,0.09523809523809523,0.09523809523809523,3
+Privacy Leakage,273,c2; c3; c5,Stage II alone,Frozen MCP-Guard,0.967032967032967,0.967032967032967,0.967032967032967,3
+Privacy Leakage,273,c2; c3; c5,Stage II alone,MCP-Guard Full,0.9929181929181929,0.9897435897435898,0.9985347985347985,3
+Privacy Leakage,273,c2; c3; c5,Stage II alone,MCP-Guard Head-Only,0.9660561660561661,0.9633699633699634,0.9677655677655678,3
+Privacy Leakage,273,c2; c3; c5,Stage II alone,Base E5 Full,0.9953601953601954,0.9941391941391942,0.9963369963369964,3
+Privacy Leakage,273,c2; c3; c5,Stage II alone,Base E5 Head-Only,0.9948717948717949,0.9904761904761905,0.9992673992673993,3
+Privacy Leakage,273,c2; c3; c5,rules,MCP-Guardian,0.09523809523809523,0.09523809523809523,0.09523809523809523,3
+Service Disruption,196,c3; c4; c7; c8,Stage I + II,Frozen MCP-Guard,1.0,1.0,1.0,4
+Service Disruption,196,c3; c4; c7; c8,Stage I + II,MCP-Guard Full,1.0,1.0,1.0,4
+Service Disruption,196,c3; c4; c7; c8,Stage I + II,MCP-Guard Head-Only,1.0,1.0,1.0,4
+Service Disruption,196,c3; c4; c7; c8,Stage I + II,Base E5 Full,1.0,1.0,1.0,4
+Service Disruption,196,c3; c4; c7; c8,Stage I + II,Base E5 Head-Only,0.9974489795918368,0.9928571428571429,1.0,4
+Service Disruption,196,c3; c4; c7; c8,rules,MCP-Guardian,0.0,0.0,0.0,4
+Service Disruption,196,c3; c4; c7; c8,Stage II alone,Frozen MCP-Guard,0.9693877551020408,0.9693877551020408,0.9693877551020408,4
+Service Disruption,196,c3; c4; c7; c8,Stage II alone,MCP-Guard Full,0.9849489795918368,0.976530612244898,0.9928571428571429,4
+Service Disruption,196,c3; c4; c7; c8,Stage II alone,MCP-Guard Head-Only,0.9698979591836735,0.9673469387755103,0.9724489795918367,4
+Service Disruption,196,c3; c4; c7; c8,Stage II alone,Base E5 Full,1.0,1.0,1.0,4
+Service Disruption,196,c3; c4; c7; c8,Stage II alone,Base E5 Head-Only,0.9928571428571429,0.9857142857142858,0.9979591836734694,4
+Service Disruption,196,c3; c4; c7; c8,rules,MCP-Guardian,0.0,0.0,0.0,4

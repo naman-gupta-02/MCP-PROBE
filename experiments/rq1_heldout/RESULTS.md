@@ -31,6 +31,8 @@ Team 12, Experiment 1 (generalization). This document records what we tested, ho
 | First run (held out: Credential Leakage, Instruction Tampering, Financial Loss) | The 20 fine-tuned models from the 2026-10-08 CARC training sweep, plus Frozen MCP-Guard and Guardian, scored on held-out (227 poisoned + 64 clean), the whole test split (382 + 64) and val (171 + 49) | Laptop, 2026-10-16: 129 runs, 0 errors |
 | Independent CARC rerun | Same evaluation on an A40 GPU (jobs `13203627`, `12930667`, 2026-10-17/18) | All 41,151 predictions identical to the laptop run |
 | Robustness check: 8 other combinations | 8 of the 35 possible 3-of-7 combinations (seeded, balanced draw, excluding the first run's categories); **all 20 models retrained per combination**; same scoring | CARC array `13272593`, 2026-10-21: 160 models trained, 1,032 runs, 0 failures |
+| Untrained detectors on all of MCPTox | Frozen MCP-Guard and Guardian on all 1,665 MCPTox rows (never trained on MCPTox, so all of it is unseen for them) | Laptop, 2026-10-24 |
+| Cross-dataset check | Base E5 Full and MCP-Guard Full (5 seeds each, original-run checkpoints from CARC) and Frozen MCP-Guard on MCP-Guard's released dev set (1,053 samples; the full MCP-AttackBench is not released) | Laptop, 2026-10-24; Frozen reproduces the paper's Table 4a exactly |
 
 Before trusting any numbers, we checked that:
 - Frozen MCP-Guard and Guardian reproduce their earlier val results exactly.
@@ -78,14 +80,57 @@ Recall with Stage II alone, per category, averaged over the combinations that he
 | Privacy Leakage | 96.7 | 99.3 | 96.6 | 99.5 | 99.5 | 9.5 |
 | Service Disruption | 96.9 | 98.5 | 97.0 | 100.0 | 99.3 | 0.0 |
 
+### Result 3: held-out recall for all 10 categories
+
+Each category's recall **in the split(s) where it was held out**: the first run for Credential Leakage, Instruction Tampering and Financial Loss, and the 3–4 combinations for the other seven (seed mean, then mean over splits). The full table with ranges is in [tables/TABLES.md](tables/TABLES.md), with CSVs alongside.
+
+| Held-out category (cases) | Frozen MCP-Guard | MCP-Guard Full | MCP-Guard Head-Only | Base E5 Full | Base E5 Head-Only | MCP Guardian |
+|---|---:|---:|---:|---:|---:|---:|
+| Code Injection (63) | 100.0 / 100.0 | 100.0 / 100.0 | 100.0 / 100.0 | 99.9 / 99.9 | 99.4 / 94.5 | 12.7 |
+| Credential Leakage (115) | 100.0 / 100.0 | 100.0 / 100.0 | 100.0 / 100.0 | 100.0 / 100.0 | 99.8 / 97.6 | 67.8 |
+| Data Tampering (117) | 100.0 / 98.3 | 100.0 / 100.0 | 99.7 / 98.5 | 100.0 / 100.0 | 100.0 / 100.0 | 7.7 |
+| Financial Loss (55) | 100.0 / 100.0 | 100.0 / 100.0 | 100.0 / 100.0 | 100.0 / 99.6 | 96.0 / 86.5 | 0.0 |
+| Information Manipulation (269) | 99.3 / 98.1 | 99.7 / 99.3 | 99.3 / 98.2 | 100.0 / 100.0 | 100.0 / 98.6 | 1.1 |
+| Infrastructure Damage (122) | 100.0 / **75.4** | 100.0 / **77.3** | 100.0 / **75.3** | 99.9 / 97.5 | 100.0 / 93.3 | 18.9 |
+| Instruction Tampering (57) | 100.0 / 100.0 | 100.0 / 100.0 | 100.0 / 100.0 | 100.0 / 100.0 | 100.0 / 100.0 | 7.0 |
+| Message Hijacking (41) | 97.6 / 97.6 | 100.0 / 99.8 | 98.7 / 98.7 | 100.0 / 100.0 | 100.0 / 99.3 | 0.0 |
+| Privacy Leakage (273) | 98.9 / 96.7 | 99.7 / 99.3 | 98.9 / 96.6 | 99.5 / 99.5 | 99.7 / 99.5 | 9.5 |
+| Service Disruption (196) | 100.0 / 96.9 | 100.0 / 98.5 | 100.0 / 97.0 | 100.0 / 100.0 | 99.7 / 99.3 | 0.0 |
+| **Average over 10 categories** | **99.6 / 96.3** | **99.9 / 97.4** | **99.7 / 96.4** | **99.9 / 99.7** | **99.5 / 96.9** | **12.5** |
+| Lowest category | 97.6 / 75.4 | 99.7 / 77.3 | 98.7 / 75.3 | 99.5 / 97.5 | 96.0 / 86.5 | 0.0 |
+
+Each cell is *Stage I + II / Stage II alone*. Guardian is rules only.
+
+**Untrained detectors on all of MCPTox.** These models were never trained on MCPTox, so all 1,312 attacks and 353 clean tools are unseen for them.
+- **Frozen MCP-Guard:** recall 99.5% (Stage I + II) and 96.0% (Stage II alone), but it **wrongly flags 16.1% of clean tools** (57 of 353), mostly from the AdFin, Commander and OP.GG servers.
+- **MCP Guardian:** recall 11.5%, flagging 1 of 353 clean tools.
+
+Per-category numbers for both are in [tables/TABLES.md](tables/TABLES.md).
+
+### Result 4: cross-dataset, on MCP-Guard's released dev set
+
+The test set is GenTelLab's `test_data/dev.csv`: 1,053 short texts, 432 of them malicious. It is the data behind MCP-Guard's paper Table 4a. The full 70k MCP-AttackBench has not been released. The fine-tuned models are our MCPTox-trained checkpoints (5 seeds); P ≥ 0.5, as MCP-Guard uses.
+
+| Model | Accuracy | Precision | Recall | F1 | FPR |
+|---|---:|---:|---:|---:|---:|
+| Frozen MCP-Guard (its home data) | 96.0 | 96.7 | 93.5 | 95.1 | 2.3 |
+| MCP-Guard Full (fine-tuned on MCPTox) | 95.7 ± 0.7 | 98.6 ± 0.1 | 90.9 ± 1.7 | 94.6 ± 0.9 | 0.9 |
+| **Base E5 Full** (fine-tuned on MCPTox) | 69.6 ± 2.0 | 98.7 ± 1.0 | **26.2 ± 5.1** | **41.2 ± 6.2** | 0.3 |
+
+These are Stage II alone. With Stage I + II: Frozen 95.0 F1, MCP-Guard Full 94.5, Base E5 Full 62.3 (recall 45.6). The two thresholds differ by at most 0.6 points.
+
+- **Fine-tuning on MCPTox didn't make MCP-Guard forget its own data.** F1 went from 95.1 to 94.6: about 11 more attacks missed, about 9 fewer false alarms.
+- **Base E5 Full, near-perfect on MCPTox, misses about three-quarters of these attacks.** The ones it misses are short and varied (harmful requests, shell snippets, social engineering), and almost none use MCPTox's template wording. This is the clearest evidence that its MCPTox score reflects MCPTox's style.
+- **Caveat:** this is MCP-Guard's in-distribution data, so it favors MCP-Guard. A neutral third dataset would be the fairest comparison.
+
 ### Answers to the research questions
 
-1. **Which detector generalizes best?** **Base E5 Full.** With Stage I + II, its held-out recall is within 0.3 points of the best detector in every one of the 9 splits. It has the highest classifier-alone recall (99.7 ± 0.3% across the new combinations, never below 99.1%) and the fewest false positives (0.0–0.3% everywhere). Its lead over the next-best models is small, a few clean tools out of 64.
+1. **Which detector generalizes best?** **On MCPTox: Base E5 Full. Across datasets: MCP-Guard Full** (see Result 4). With Stage I + II, its held-out recall is within 0.3 points of the best detector in every one of the 9 splits. It has the highest classifier-alone recall (99.7 ± 0.3% across the new combinations, never below 99.1%) and the fewest false positives (0.0–0.3% everywhere). Its lead over the next-best models is small, a few clean tools out of 64. But on MCP-Guard's dev set it falls to 41.2 F1 (26% recall), while MCP-Guard Full keeps 94.6 F1. Base E5 Full's lead is specific to MCPTox. **MCP-Guard Full is the more robust detector overall**: within 0.2 F1 of E5 on MCPTox, and far better on other data.
 2. **Full or head-only fine-tuning?** **Full**, consistently. The head-only models flag the most clean tools (Base E5 Head-Only 6.3%, MCP-Guard Head-Only 4.6%, vs 0.2% and 1.9% for the full fine-tunes). Head-only E5 is also the only learned model that missed held-out attacks with Stage I + II in the first run (Financial Loss).
-3. **MCP-Guard's security-trained encoder or the general E5 encoder?** **E5, once fine-tuned.**
+3. **MCP-Guard's security-trained encoder or the general E5 encoder?** **On MCPTox, E5 (once fine-tuned). Outside MCPTox, MCP-Guard's, by far** (dev-set F1 94.6 vs 41.2 after the same MCPTox fine-tuning).
    - The first run suggested that MCP-Guard's encoder is better when frozen (head-only, classifier alone: 100% vs 95.5%). **That doesn't hold across the other combinations**: E5 Head-Only averages 98.4% vs 95.8%.
    - MCP-Guard's encoder has a blind spot. It catches only about 75–77% of held-out Infrastructure Damage attacks with the classifier alone, whether released, head-only or fully fine-tuned. Base E5 Full catches 97.5%.
-   - MCP-Guard's advantage is that it needs no training at all: as released it already reaches 99.3–100% with its regex stage.
+   - MCP-Guard's advantage is that it needs no training at all: as released it already reaches 99.3–100% with its regex stage. Its security pre-training also survives MCPTox fine-tuning and keeps it working on other attack data, which E5 lacks.
 4. **Rule-based Guardian vs learned classifiers?** Guardian never flags a clean tool (precision 100%, FPR 0%), but it catches few attacks. Its recall depends entirely on whether a category's wording overlaps with its 11 rules: 36.1% on the first run's categories (thanks to Credential Leakage's SSH-key and secrets wording), and 0.6–11.3% (mean 6.0%) on the other combinations. It catches 0% of Financial Loss, Message Hijacking and Service Disruption.
 5. **Which categories are hardest?**
    - For the regex detector: Financial Loss, Message Hijacking and Service Disruption (0%).
@@ -609,6 +654,8 @@ Recall on held-out categories is as high as on val for every learned model. Only
 | This analysis | `experiments/rq1_heldout/RESULTS.md` |
 | Code, tests, CARC jobs | `experiments/rq1_heldout/{evaluate.py,report.py,test_evaluate.py,carc/}` |
 | Generated tables | `results/rq1_heldout/report.md` (held-out), `results/rq1_heldout/report_test.md` (whole test) |
+| Per-category (all 10 categories), untrained-on-all-MCPTox and cross-dataset tables, committed | [tables/TABLES.md](tables/TABLES.md) and `tables/*.csv` (`category_summary.py`) |
+| Cross-dataset raw outputs (gitignored) | `results/mcp_guard/upstream_dev_eval/` (`detectors/mcp_guard/eval_upstream_dev.py`) |
 | Per model and configuration (seed mean ± std) | `results/rq1_heldout/<split>/summary.{csv,json}` |
 | Per run, including each seed | `results/rq1_heldout/<split>/runs.csv` |
 | Per run detail: checkpoint, counts, metrics, confusion matrix, time, errors | `results/rq1_heldout/<split>/<model>/<config>[_seed<k>]/{metrics.json,log.txt}` |
