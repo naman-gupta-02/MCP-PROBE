@@ -1,6 +1,6 @@
 # RQ1: held-out category evaluation
 
-Results and analysis: [RESULTS.md](RESULTS.md).
+Results and analysis: [RESULTS.md](RESULTS.md) (first run) and [COMBOS_RESULTS.md](COMBOS_RESULTS.md) (8 other held-out combinations; per-combination files in [combos/results/](combos/results/)).
 
 Scores the six detectors on the three MCPTox risk categories that no detector was tuned on (`held_out_categories` in [server_split.json](../../data/splits/server_split.json): Credential Leakage, Instruction Tampering, Financial Loss). Nothing is trained, tuned or selected here: the scripts load the existing MCP-Guard checkpoints and the frozen MCP Guardian ruleset (fingerprint `9decc37e4f86`).
 
