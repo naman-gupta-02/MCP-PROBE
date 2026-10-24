@@ -1,8 +1,117 @@
 # RQ1 results: do MCP tool-poisoning detectors generalize to unseen attack categories?
 
-Team 12, Experiment 1 (generalization). This document records what we tested, how we tested it, every result we obtained and how to read them. All tables are generated from the saved result files in `results/rq1_heldout/` (gitignored). How to rerun everything is in [README.md](README.md).
+Team 12, Experiment 1 (generalization). This document records what we tested, how we tested it, every result we obtained and how to read them. It opens with a **full summary of all RQ1 work**: the first held-out run, its independent CARC rerun, and the robustness check on 8 other held-out combinations. Sections 1–11 then give the first run in full detail. The 8 combinations are detailed in [COMBOS_RESULTS.md](COMBOS_RESULTS.md) and [combos/results/](combos/results/). All tables are generated from the saved result files in `results/rq1_heldout/` and `results/rq1_combos/` (gitignored). How to rerun everything is in [README.md](README.md).
 
-## Summary
+## Full summary of all RQ1 results
+
+### The question
+
+**Do MCP tool-poisoning detectors still catch attacks from risk categories they were never tuned on?** A detector reads each tool's description (from `tools/list`) and blocks it if it looks poisoned. We hold out whole MCPTox risk categories from tuning and training, then test on them.
+
+### What was tested
+
+| # | Detector | What it is | Trained on MCPTox by us? |
+|---|---|---|---|
+| 1 | Frozen MCP-Guard | MCP-Guard's released classifier (arXiv 2508.10991; `GenTelLab/MCP-Guard` @ `861a928`), trained by its authors on their own data | No |
+| 2 | MCP-Guard Full | #1 with all weights fine-tuned on our `tune` split | Yes, 5 seeds |
+| 3 | MCP-Guard Head-Only | #1 with its encoder frozen; only the classification head trained | Yes, 5 seeds |
+| 4 | Base E5 Full | General-purpose `intfloat/multilingual-e5-base` encoder + new head, all weights trained | Yes, 5 seeds |
+| 5 | Base E5 Head-Only | Same encoder frozen; only the new head trained | Yes, 5 seeds |
+| 6 | MCP Guardian | Regex filter with the 11 rules from arXiv 2504.12757 (our reimplementation), never tuned | No |
+
+- **Configurations:** MCP-Guard variants run with Stage I (MCP-Guard's 7 regex rules) + Stage II (the classifier), as deployed, and with Stage II alone, to compare encoders. Stage III (the LLM check) was not run.
+- **Data:** MCPTox (arXiv 2508.14925): 1,312 poisoned cases + 353 clean (benign) tool descriptions from 45 real servers. Servers are split 30 / 6 / 9 into tune / val / test; the held-out categories appear only in test.
+- **Held-out evaluation:** every case of the held-out categories, plus the 64 clean test tools.
+- **Metrics:** category and combined accuracy (all held-out cases are poisoned, so this is recall; combined is pooled, not averaged); precision, recall, F1, FPR and confusion matrices with the clean tools; recall by attack type and test cell. Fine-tuned models are reported as mean ± std over 5 seeds.
+
+### What was done
+
+| Step | Details | Outcome |
+|---|---|---|
+| First run (held out: Credential Leakage, Instruction Tampering, Financial Loss) | The 20 fine-tuned models from the 2026-10-08 CARC training sweep, plus Frozen MCP-Guard and Guardian, scored on held-out (227 poisoned + 64 clean), the whole test split (382 + 64) and val (171 + 49) | Laptop, 2026-10-16: 129 runs, 0 errors |
+| Independent CARC rerun | Same evaluation on an A40 GPU (jobs `13203627`, `12930667`, 2026-10-17/18) | All 41,151 predictions identical to the laptop run |
+| Robustness check: 8 other combinations | 8 of the 35 possible 3-of-7 combinations (seeded, balanced draw, excluding the first run's categories); **all 20 models retrained per combination**; same scoring | CARC array `13272593`, 2026-10-21: 160 models trained, 1,032 runs, 0 failures |
+
+Before trusting any numbers, we checked that:
+- Frozen MCP-Guard and Guardian reproduce their earlier val results exactly.
+- All 21 val confusion matrices match the training sweep.
+- The split builder reproduces the team's data byte for byte.
+- No held-out examples were read.
+
+### Result 1: the first run
+
+Held-out poisoned + 64 clean test tools, Stage I + II (Stage II-alone recall in the last column):
+
+| Detector | Credential Leakage (115) | Instruction Tampering (57) | Financial Loss (55) | **Combined (227)** | Precision | F1 | FPR | Combined, Stage II alone |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| Frozen MCP-Guard | 100.0 | 100.0 | 100.0 | **100.0** | 99.1 | 99.6 | 3.1 | 100.0 |
+| MCP-Guard Full | 100.0 | 100.0 | 100.0 | **100.0** | 99.6 | 99.8 | 1.6 | 100.0 |
+| MCP-Guard Head-Only | 100.0 | 100.0 | 100.0 | **100.0** | 98.8 | 99.4 | 4.4 | 100.0 |
+| Base E5 Full | 100.0 | 100.0 | 100.0 | **100.0** | 99.9 | 100.0 | 0.3 | 99.9 |
+| Base E5 Head-Only | 99.8 | 100.0 | 96.0 | **98.9** | 98.3 | 98.6 | 6.2 | 95.5 |
+| MCP Guardian | 67.8 | 7.0 | 0.0 | **36.1** | 100.0 | 53.1 | 0.0 | – |
+
+On the whole test split (446 rows), the learned models reach 99.3–100% recall and F1 99.1–100; Guardian reaches 23.0% recall.
+
+### Result 2: across 8 other held-out combinations
+
+Mean ± std across the 8 combinations [min–max]; each combination's value is the mean over 5 seeds:
+
+| Detector | Combined recall, Stage I + II | F1, Stage I + II | FPR (64 clean) | Combined recall, Stage II alone |
+|---|---:|---:|---:|---:|
+| Frozen MCP-Guard | 99.5 ± 0.1 [99.3–99.7] | 99.5 ± 0.1 | 3.1 ± 0.0 | 95.7 ± 2.9 [91.7–98.6] |
+| MCP-Guard Full | 99.9 ± 0.1 [99.7–100.0] | 99.8 ± 0.1 | 1.9 ± 1.0 | 97.4 ± 3.0 [93.6–100.0] |
+| MCP-Guard Head-Only | 99.5 ± 0.1 [99.2–99.7] | 99.4 ± 0.2 | 4.6 ± 1.2 | 95.8 ± 3.1 [91.5–99.0] |
+| **Base E5 Full** | 99.9 ± 0.1 [99.6–100.0] | **99.9 ± 0.1** | **0.2 ± 0.2** | **99.7 ± 0.3 [99.1–100.0]** |
+| Base E5 Head-Only | 99.9 ± 0.1 [99.7–100.0] | 99.5 ± 0.3 | 6.3 ± 1.5 | 98.4 ± 0.9 [96.5–99.4] |
+| MCP Guardian | 6.0 ± 3.6 [0.6–11.3] | 11.1 ± 6.4 | 0.0 | – |
+
+Recall with Stage II alone, per category, averaged over the combinations that held that category out:
+
+| Held-out category | Frozen MCP-Guard | MCP-Guard Full | MCP-Guard Head-Only | Base E5 Full | Base E5 Head-Only | Guardian |
+|---|---:|---:|---:|---:|---:|---:|
+| Code Injection | 100.0 | 100.0 | 100.0 | 99.9 | 94.5 | 12.7 |
+| Data Tampering | 98.3 | 100.0 | 98.5 | 100.0 | 100.0 | 7.7 |
+| Information Manipulation | 98.1 | 99.3 | 98.2 | 100.0 | 98.6 | 1.1 |
+| **Infrastructure Damage** | **75.4** | **77.3** | **75.3** | **97.5** | 93.3 | 18.9 |
+| Message Hijacking | 97.6 | 99.8 | 98.7 | 100.0 | 99.3 | 0.0 |
+| Privacy Leakage | 96.7 | 99.3 | 96.6 | 99.5 | 99.5 | 9.5 |
+| Service Disruption | 96.9 | 98.5 | 97.0 | 100.0 | 99.3 | 0.0 |
+
+### Answers to the research questions
+
+1. **Which detector generalizes best?** **Base E5 Full.** With Stage I + II, its held-out recall is within 0.3 points of the best detector in every one of the 9 splits. It has the highest classifier-alone recall (99.7 ± 0.3% across the new combinations, never below 99.1%) and the fewest false positives (0.0–0.3% everywhere). Its lead over the next-best models is small, a few clean tools out of 64.
+2. **Full or head-only fine-tuning?** **Full**, consistently. The head-only models flag the most clean tools (Base E5 Head-Only 6.3%, MCP-Guard Head-Only 4.6%, vs 0.2% and 1.9% for the full fine-tunes). Head-only E5 is also the only learned model that missed held-out attacks with Stage I + II in the first run (Financial Loss).
+3. **MCP-Guard's security-trained encoder or the general E5 encoder?** **E5, once fine-tuned.**
+   - The first run suggested that MCP-Guard's encoder is better when frozen (head-only, classifier alone: 100% vs 95.5%). **That doesn't hold across the other combinations**: E5 Head-Only averages 98.4% vs 95.8%.
+   - MCP-Guard's encoder has a blind spot. It catches only about 75–77% of held-out Infrastructure Damage attacks with the classifier alone, whether released, head-only or fully fine-tuned. Base E5 Full catches 97.5%.
+   - MCP-Guard's advantage is that it needs no training at all: as released it already reaches 99.3–100% with its regex stage.
+4. **Rule-based Guardian vs learned classifiers?** Guardian never flags a clean tool (precision 100%, FPR 0%), but it catches few attacks. Its recall depends entirely on whether a category's wording overlaps with its 11 rules: 36.1% on the first run's categories (thanks to Credential Leakage's SSH-key and secrets wording), and 0.6–11.3% (mean 6.0%) on the other combinations. It catches 0% of Financial Loss, Message Hijacking and Service Disruption.
+5. **Which categories are hardest?**
+   - For the regex detector: Financial Loss, Message Hijacking and Service Disruption (0%).
+   - For MCP-Guard's classifier: Infrastructure Damage (~75%).
+   - For head-only E5: Financial Loss (first run, 96.0% with Stage I + II) and Code Injection (94.5% classifier alone).
+   - With Stage I + II, the lowest category score for any learned model is 96.0% (head-only E5, Financial Loss, first run). In the 8 new combinations, none falls below 97.6%.
+
+### How to interpret this: why near-perfect scores don't prove generalization
+
+- **Not overfitting.** Scores on training data, val, held-out and the whole test split are all about the same (99–100%). Overfitting would show a gap.
+- **The benchmark is easy to separate.** Every MCPTox category is written with the same injection templates (`<IMPORTANT>` tags, "you MUST first call…"), and clean descriptions are much shorter than poisoned ones (median 14 vs 60 tokens).
+  - MCP-Guard's regex stage alone catches 78% of the first run's held-out attacks.
+  - MCP-Guard as released, never trained on MCPTox, scores 99.3–100%.
+  - Base E5 reaches ~99% val F1 after 1–2 epochs.
+- **Class balance flatters accuracy.** A detector that blocks everything would score 100% category accuracy and 78% accuracy on held-out + clean.
+- **What RQ1 shows:** on MCPTox, unseen categories are close to in-distribution for every learned detector. These numbers are an upper bound. Whether the detectors recognize harmful *intent* or just MCPTox's *style* is what Experiment 2 (an attacker rewriting caught descriptions) and Experiment 3 (live servers) test.
+
+### Limitations
+
+- Only 64 clean test tools (20 empty), so one false positive moves FPR by 1.6 points.
+- The 8 combinations overlap and reuse the same test servers, so the spread across combinations is descriptive, not a confidence interval.
+- The whole test split has been used, so no untouched test data remains.
+- Stage III was not run, though it would rarely trigger (no Frozen MCP-Guard score fell in its band).
+- A length-matched check and simple length and keyword baselines are still open.
+
+## Summary of the first run
 
 - **What we tested:** six detectors (five MCP-Guard variants and MCP Guardian) on the three MCPTox risk categories that none of them was tuned on: Credential Leakage, Instruction Tampering and Financial Loss. We also scored them on the whole MCPTox test split and on val (dev data) for comparison.
 - **Main result:** the four strongest learned models catch **100%** of held-out-category attacks, Base E5 Head-Only catches **98.9%**, and MCP Guardian catches **36.1%**. With the 64 clean test tools included, **Base E5 Full** is best (F1 100.0, 0.2 of 64 clean tools wrongly flagged on average).
@@ -475,6 +584,7 @@ Recall on held-out categories is as high as on val for every learned model. Only
    - With the encoder frozen (head-only), MCP-Guard's encoder beats E5: Stage II alone recall 100% vs 95.5%, FPR 4.4% vs 6.2%.
    - With full fine-tuning the two converge, and E5 Full ends up with the fewest false positives.
    - So the security pre-training helps most when the encoder can't be updated.
+   - *Across the 8 other held-out combinations this does not hold: E5 Head-Only averages 98.4% vs 95.8% for MCP-Guard Head-Only (Stage II alone), and MCP-Guard's encoder catches only ~75% of held-out Infrastructure Damage. See the full summary at the top and [COMBOS_RESULTS.md](COMBOS_RESULTS.md).*
 4. **Rule-based MCP Guardian vs learned classifiers?** Guardian never flags a clean tool, with precision 100% wherever it flags anything. But it catches only 36.1% of held-out attacks and 23.0% of the whole test split.
    - What it catches depends on topic overlap with its 11 rules. Credential Leakage (67.8%) comes almost entirely from `ssh_key`, `env_secret` and `sensitive_file`.
    - Financial Loss (0%) matches no rule at all. Neither do 6 of the 7 seen categories on the test split (Section 6.5); on val it does catch Code Injection and some Data Tampering (Section 7).
