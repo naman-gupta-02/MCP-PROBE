@@ -23,3 +23,7 @@ __pycache__/
 
 # Notebooks
 .ipynb_checkpoints/
+
+# Experiment 2 attacker: evasion prompt and any local keys stay out of git
+attacker/rewrite_prompt.txt
+.DS_Store
