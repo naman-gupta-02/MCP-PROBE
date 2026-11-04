@@ -1,0 +1,15 @@
+# Experiment 3 proxy config, condition: none.
+# The three conditions differ ONLY in the detector block below.
+# Point --spec at the POISONED server spec for real runs (clean one shown here).
+run_id: null
+upstream:
+  name: mail
+  command: .venv/bin/python
+  args: [-m, servers.mock_server, --spec, configs/servers/mail_clean.yaml]
+  env: {}
+  cwd: null
+detector:
+  class: proxy.detector_slot:NoDetector
+  params: {}
+  on_error: raise
+log_dir: results/proxy_logs

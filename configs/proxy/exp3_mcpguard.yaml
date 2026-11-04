@@ -1,0 +1,16 @@
+# Experiment 3 proxy config, condition: mcpguard.
+# The three conditions differ ONLY in the detector block below.
+# Point --spec at the POISONED server spec for real runs (clean one shown here).
+run_id: null
+upstream:
+  name: mail
+  command: .venv/bin/python
+  args: [-m, servers.mock_server, --spec, configs/servers/mail_clean.yaml]
+  env: {}
+  cwd: null
+detector:
+  class: detectors.proxy_filters:MCPGuard
+  params: {ckpt_root: checkpoints/mcp_guard, variant: mcpguard_full}
+  timeout_s: 60
+  on_error: fail_closed
+log_dir: results/proxy_logs
