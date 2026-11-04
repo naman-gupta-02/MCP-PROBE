@@ -44,8 +44,20 @@ def build_feedback(check, mode: str) -> dict:
     return {"blocked": check.blocked, "stage": check.stage, "score": check.score, "rules": check.rules}
 
 
+def _attach_trace(rec: dict, attacker) -> None:
+    """Add the exact user turn sent and the raw model reply, when the attacker exposes them."""
+    if hasattr(attacker, "last_raw"):
+        rec["sent_user"] = getattr(attacker, "last_user", None)
+        rec["raw_response"] = attacker.last_raw
+        rec["usage"] = getattr(attacker, "last_usage", None)
+
+
 def run_trajectory(task: RewriteTask, detector, attacker, cap: int, feedback_mode: str) -> dict:
-    """Retry the rewrite up to `cap` times; stop as soon as the detector passes a candidate."""
+    """Retry the rewrite up to `cap` times; stop as soon as the detector passes a candidate.
+
+    Each attempt logs the feedback sent, the exact user turn, the raw model reply (pre-parse),
+    token usage, the parsed candidate and the detector's verdict -- the full send/receive trail.
+    """
     attempts: list[dict] = []
     current = task.original_description
     last_check = None
@@ -57,14 +69,19 @@ def run_trajectory(task: RewriteTask, detector, attacker, cap: int, feedback_mod
         try:
             cand = attacker.rewrite(task, current, n, feedback, produced)  # may raise DailyLimitReached
         except RuntimeError as e:  # client gave up (e.g. persistent rate limit); don't kill the run
-            attempts.append({"n": n, "description": None, "error": f"client_error: {str(e)[:120]}"})
+            attempts.append({"n": n, "feedback_sent": feedback, "description": None,
+                             "error": f"client_error: {str(e)[:120]}"})
             break
+        rec = {"n": n, "feedback_sent": feedback}
+        _attach_trace(rec, attacker)
         if not cand:
-            attempts.append({"n": n, "description": None, "error": "no_candidate"})
+            rec.update({"description": None, "error": "no_candidate"})
+            attempts.append(rec)
             continue
         chk = detector.check(task.tool_name, cand)
-        attempts.append({"n": n, "description": cand, "blocked": chk.blocked,
-                         "stage": chk.stage, "score": chk.score, "rules": chk.rules})
+        rec.update({"description": cand, "blocked": chk.blocked,
+                    "stage": chk.stage, "score": chk.score, "rules": chk.rules})
+        attempts.append(rec)
         final = cand
         if not chk.blocked:
             evaded = True
@@ -107,9 +124,37 @@ def stratified(cases: list[dict], n: int, seed: int) -> list[dict]:
     return picked[:n]
 
 
-def seeds_for(split: str, sample: int | None, seed: int) -> list[dict]:
+def per_category(cases: list[dict], n: int, seed: int) -> list[dict]:
+    """Up to n poisoned entries per risk_category, balanced across attack type within each."""
+    bycat: dict[str, list[dict]] = defaultdict(list)
+    for c in cases:
+        bycat[c.get("risk_category")].append(c)
+    rng = random.Random(seed)
+    picked: list[dict] = []
+    for cat in sorted(bycat, key=lambda k: str(k)):
+        bypar: dict[str, list[dict]] = defaultdict(list)
+        for r in bycat[cat]:
+            bypar[r.get("paradigm")].append(r)
+        for b in bypar.values():
+            rng.shuffle(b)
+        pars = sorted(bypar, key=lambda k: str(k))
+        chosen: list[dict] = []
+        i = 0
+        want = min(n, len(bycat[cat]))
+        while len(chosen) < want:
+            b = bypar[pars[i % len(pars)]]
+            if b:
+                chosen.append(b.pop())
+            i += 1
+        picked.extend(chosen)
+    return picked
+
+
+def seeds_for(split: str, sample: int | None, seed: int, per_cat: int | None = None) -> list[dict]:
     rows = [r for r in load_cases(split, None) if r["is_poisoned"] and (r["description"] or "").strip()]
-    if sample:
+    if per_cat:
+        rows = per_category(rows, per_cat, seed)
+    elif sample:
         rows = stratified(rows, sample, seed)
     return rows
 
@@ -134,6 +179,7 @@ def main() -> None:
     ap.add_argument("--prompt-path", default=str(ROOT / "attacker" / "rewrite_prompt.txt"))
     ap.add_argument("--out", default="results/attacker/run.jsonl")
     ap.add_argument("--sample", type=int, help="stratified subset size (default: all caught seeds)")
+    ap.add_argument("--per-category", type=int, help="take up to N poisoned entries per risk_category (balanced across attack types)")
     ap.add_argument("--max-trajectories", type=int, help="stop after this many trajectories (for smoke tests)")
     ap.add_argument("--seed", type=int, default=2026)
     ap.add_argument("--length-target", type=int)
@@ -147,8 +193,13 @@ def main() -> None:
     ap.add_argument("--base-url", default="https://api.groq.com/openai/v1")
     args = ap.parse_args()
 
-    seeds = seeds_for(args.split, args.sample, args.seed)
+    seeds = seeds_for(args.split, args.sample, args.seed, args.per_category)
     print(f"{len(seeds)} poisoned seeds on {args.split}")
+    if args.per_category:
+        cats: dict = defaultdict(int)
+        for r in seeds:
+            cats[r["risk_category"]] += 1
+        print("  per category: " + ", ".join(f"{k}={v}" for k, v in sorted(cats.items())))
 
     out = ROOT / args.out
     out.parent.mkdir(parents=True, exist_ok=True)
@@ -176,6 +227,13 @@ def main() -> None:
         ChatClient(m, base_url=args.base_url, rpm=args.rpm, tpm=args.tpm, extra_body=extra or None),
         prompt_path=args.prompt_path, temperature=args.temperature, max_tokens=args.max_tokens)
         for m in args.attackers}
+
+    # Log the constant pieces once: the exact system prompt sent on every call + the full config.
+    (out.parent / (out.stem + ".meta.json")).write_text(json.dumps({
+        "system_prompt": next(iter(attackers.values())).system,
+        "prompt_path": args.prompt_path,
+        "config": {k: v for k, v in vars(args).items()},
+    }, indent=2), encoding="utf-8")
 
     written = 0
     try:

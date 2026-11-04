@@ -27,3 +27,4 @@ __pycache__/
 # Experiment 2 attacker: evasion prompt and any local keys stay out of git
 attacker/rewrite_prompt.txt
 .DS_Store
+checkpoints/

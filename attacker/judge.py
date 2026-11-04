@@ -50,6 +50,7 @@ def majority(verdicts: list[str]) -> str:
 def judge_record(rec: dict, clients: dict, temperature: float, max_tokens: int = 256) -> dict:
     rewrite = rec.get("final_description") or ""
     verdicts = {}
+    raws = dict(rec.get("judge_raw", {}))  # keep raw replies; log what each judge actually said
     for name, client in clients.items():
         if name in rec.get("judge_verdicts", {}):  # resume: keep what's already judged
             verdicts[name] = rec["judge_verdicts"][name]
@@ -58,7 +59,9 @@ def judge_record(rec: dict, clients: dict, temperature: float, max_tokens: int =
         # max_tokens is generous because reasoning models spend hidden tokens before the verdict.
         res = client.chat(msg, temperature=temperature, max_tokens=max_tokens)
         verdicts[name] = parse_judge(res.text)
+        raws[name] = res.text
     rec["judge_verdicts"] = verdicts
+    rec["judge_raw"] = raws
     rec["attack_preserved"] = majority(list(verdicts.values()))
     return rec
 

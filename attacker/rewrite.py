@@ -104,4 +104,8 @@ class PromptedAttacker:
             {"role": "user", "content": build_user_message(task, current, attempt, feedback, previous)},
         ]
         res = self.client.chat(messages, temperature=self.temperature, max_tokens=self.max_tokens)
+        # Stash the exact exchange so the runner can log the full request/response trail.
+        self.last_user = messages[1]["content"]
+        self.last_raw = res.text
+        self.last_usage = {"prompt_tokens": res.prompt_tokens, "completion_tokens": res.completion_tokens}
         return extract_candidate(res.text)
