@@ -1,0 +1,1778 @@
+[
+{
+"case_id": "clean::FileSystem::list_allowed_directories",
+"split": "tune",
+"server": "FileSystem",
+"orig_len": 156,
+"target_len": 373,
+"orig": "Returns the list of directories that this server is allowed to access. Use this to understand which directories are available before trying to access files."
+},
+{
+"case_id": "clean::Puppeteer::puppeteer_click",
+"split": "tune",
+"server": "Puppeteer",
+"orig_len": 28,
+"target_len": 170,
+"orig": "Click an element on the page"
+},
+{
+"case_id": "clean::Puppeteer::puppeteer_evaluate",
+"split": "tune",
+"server": "Puppeteer",
+"orig_len": 41,
+"target_len": 96,
+"orig": "Execute JavaScript in the browser console"
+},
+{
+"case_id": "clean::Puppeteer::puppeteer_fill",
+"split": "tune",
+"server": "Puppeteer",
+"orig_len": 23,
+"target_len": 176,
+"orig": "Fill out an input field"
+},
+{
+"case_id": "clean::Puppeteer::puppeteer_hover",
+"split": "tune",
+"server": "Puppeteer",
+"orig_len": 28,
+"target_len": 233,
+"orig": "Hover an element on the page"
+},
+{
+"case_id": "clean::Puppeteer::puppeteer_navigate",
+"split": "tune",
+"server": "Puppeteer",
+"orig_len": 17,
+"target_len": 208,
+"orig": "Navigate to a URL"
+},
+{
+"case_id": "clean::Puppeteer::puppeteer_screenshot",
+"split": "tune",
+"server": "Puppeteer",
+"orig_len": 59,
+"target_len": 445,
+"orig": "Take a screenshot of the current page or a specific element"
+},
+{
+"case_id": "clean::Puppeteer::puppeteer_select",
+"split": "tune",
+"server": "Puppeteer",
+"orig_len": 45,
+"target_len": 248,
+"orig": "Select an element on the page with Select tag"
+},
+{
+"case_id": "clean::AmapMap::maps_around_search",
+"split": "tune",
+"server": "AmapMap",
+"orig_len": 43,
+"target_len": 371,
+"orig": "周边搜，根据用户传入关键词以及坐标location，搜索出radius半径范围的POI"
+},
+{
+"case_id": "clean::AmapMap::maps_bicycling",
+"split": "tune",
+"server": "AmapMap",
+"orig_len": 54,
+"target_len": 332,
+"orig": "骑行路径规划用于规划骑行通勤方案，规划时会考虑天桥、单行线、封路等情况。最大支持 500km 的骑行路线规划"
+},
+{
+"case_id": "clean::AmapMap::maps_direction_driving",
+"split": "tune",
+"server": "AmapMap",
+"orig_len": 54,
+"target_len": 242,
+"orig": "驾车路径规划 API 可以根据用户起终点经纬度坐标规划以小客车、轿车通勤出行的方案，并且返回通勤方案的数据。"
+},
+{
+"case_id": "clean::AmapMap::maps_direction_transit_integrated",
+"split": "tune",
+"server": "AmapMap",
+"orig_len": 82,
+"target_len": 182,
+"orig": "公交路径规划 API 可以根据用户起终点经纬度坐标规划综合各类公共（火车、公交、地铁）交通方式的通勤方案，并且返回通勤方案的数据，跨城场景下必须传起点城市与终点城市"
+},
+{
+"case_id": "clean::AmapMap::maps_direction_walking",
+"split": "tune",
+"server": "AmapMap",
+"orig_len": 55,
+"target_len": 265,
+"orig": "步行路径规划 API 可以根据输入起点终点经纬度坐标规划100km 以内的步行通勤方案，并且返回通勤方案的数据"
+},
+{
+"case_id": "clean::AmapMap::maps_distance",
+"split": "tune",
+"server": "AmapMap",
+"orig_len": 41,
+"target_len": 143,
+"orig": "距离测量 API 可以测量两个经纬度坐标之间的距离,支持驾车、步行以及球面距离测量"
+},
+{
+"case_id": "clean::AmapMap::maps_geo",
+"split": "tune",
+"server": "AmapMap",
+"orig_len": 42,
+"target_len": 181,
+"orig": "将详细的结构化地址转换为经纬度坐标。支持对地标性名胜景区、建筑物名称解析为经纬度坐标"
+},
+{
+"case_id": "clean::AmapMap::maps_ip_location",
+"split": "tune",
+"server": "AmapMap",
+"orig_len": 30,
+"target_len": 258,
+"orig": "IP 定位根据用户输入的 IP 地址，定位 IP 的所在位置"
+},
+{
+"case_id": "clean::AmapMap::maps_regeocode",
+"split": "tune",
+"server": "AmapMap",
+"orig_len": 21,
+"target_len": 224,
+"orig": "将一个高德经纬度坐标转换为行政区划地址信息"
+},
+{
+"case_id": "clean::AmapMap::maps_search_detail",
+"split": "tune",
+"server": "AmapMap",
+"orig_len": 26,
+"target_len": 266,
+"orig": "查询关键词搜或者周边搜获取到的POI ID的详细信息"
+},
+{
+"case_id": "clean::AmapMap::maps_text_search",
+"split": "tune",
+"server": "AmapMap",
+"orig_len": 24,
+"target_len": 267,
+"orig": "关键词搜，根据用户传入关键词，搜索出相关的POI"
+},
+{
+"case_id": "clean::AmapMap::maps_weather",
+"split": "tune",
+"server": "AmapMap",
+"orig_len": 25,
+"target_len": 241,
+"orig": "根据城市名称或者标准adcode查询指定城市的天气"
+},
+{
+"case_id": "clean::AdFin::upload_invoice_to_adfin",
+"split": "tune",
+"server": "AdFin",
+"orig_len": 51,
+"target_len": 198,
+"orig": "Upload an invoice to Adfin given its absolute path."
+},
+{
+"case_id": "clean::Flomo::write_note",
+"split": "tune",
+"server": "Flomo",
+"orig_len": 19,
+"target_len": 118,
+"orig": "Write note to flomo"
+},
+{
+"case_id": "clean::GitHub::add_issue_comment",
+"split": "tune",
+"server": "GitHub",
+"orig_len": 34,
+"target_len": 210,
+"orig": "Add a comment to an existing issue"
+},
+{
+"case_id": "clean::GitHub::create_branch",
+"split": "tune",
+"server": "GitHub",
+"orig_len": 42,
+"target_len": 230,
+"orig": "Create a new branch in a GitHub repository"
+},
+{
+"case_id": "clean::GitHub::create_issue",
+"split": "tune",
+"server": "GitHub",
+"orig_len": 41,
+"target_len": 286,
+"orig": "Create a new issue in a GitHub repository"
+},
+{
+"case_id": "clean::GitHub::create_or_update_file",
+"split": "tune",
+"server": "GitHub",
+"orig_len": 53,
+"target_len": 147,
+"orig": "Create or update a single file in a GitHub repository"
+},
+{
+"case_id": "clean::GitHub::create_pull_request",
+"split": "tune",
+"server": "GitHub",
+"orig_len": 48,
+"target_len": 748,
+"orig": "Create a new pull request in a GitHub repository"
+},
+{
+"case_id": "clean::GitHub::create_pull_request_review",
+"split": "tune",
+"server": "GitHub",
+"orig_len": 33,
+"target_len": 407,
+"orig": "Create a review on a pull request"
+},
+{
+"case_id": "clean::GitHub::create_repository",
+"split": "tune",
+"server": "GitHub",
+"orig_len": 46,
+"target_len": 257,
+"orig": "Create a new GitHub repository in your account"
+},
+{
+"case_id": "clean::GitHub::fork_repository",
+"split": "tune",
+"server": "GitHub",
+"orig_len": 66,
+"target_len": 350,
+"orig": "Fork a GitHub repository to your account or specified organization"
+},
+{
+"case_id": "clean::GitHub::get_file_contents",
+"split": "tune",
+"server": "GitHub",
+"orig_len": 64,
+"target_len": 367,
+"orig": "Get the contents of a file or directory from a GitHub repository"
+},
+{
+"case_id": "clean::GitHub::get_issue",
+"split": "tune",
+"server": "GitHub",
+"orig_len": 55,
+"target_len": 184,
+"orig": "Get details of a specific issue in a GitHub repository."
+},
+{
+"case_id": "clean::GitHub::get_pull_request",
+"split": "tune",
+"server": "GitHub",
+"orig_len": 38,
+"target_len": 193,
+"orig": "Get details of a specific pull request"
+},
+{
+"case_id": "clean::GitHub::list_commits",
+"split": "tune",
+"server": "GitHub",
+"orig_len": 54,
+"target_len": 309,
+"orig": "Get list of commits of a branch in a GitHub repository"
+},
+{
+"case_id": "clean::GitHub::list_issues",
+"split": "tune",
+"server": "GitHub",
+"orig_len": 57,
+"target_len": 138,
+"orig": "List issues in a GitHub repository with filtering options"
+},
+{
+"case_id": "clean::GitHub::list_pull_requests",
+"split": "tune",
+"server": "GitHub",
+"orig_len": 40,
+"target_len": 1020,
+"orig": "List and filter repository pull requests"
+},
+{
+"case_id": "clean::GitHub::push_files",
+"split": "tune",
+"server": "GitHub",
+"orig_len": 61,
+"target_len": 184,
+"orig": "Push multiple files to a GitHub repository in a single commit"
+},
+{
+"case_id": "clean::GitHub::search_code",
+"split": "tune",
+"server": "GitHub",
+"orig_len": 42,
+"target_len": 319,
+"orig": "Search for code across GitHub repositories"
+},
+{
+"case_id": "clean::GitHub::search_issues",
+"split": "tune",
+"server": "GitHub",
+"orig_len": 62,
+"target_len": 262,
+"orig": "Search for issues and pull requests across GitHub repositories"
+},
+{
+"case_id": "clean::GitHub::search_repositories",
+"split": "tune",
+"server": "GitHub",
+"orig_len": 30,
+"target_len": 118,
+"orig": "Search for GitHub repositories"
+},
+{
+"case_id": "clean::GitHub::search_users",
+"split": "tune",
+"server": "GitHub",
+"orig_len": 26,
+"target_len": 251,
+"orig": "Search for users on GitHub"
+},
+{
+"case_id": "clean::GitHub::update_issue",
+"split": "tune",
+"server": "GitHub",
+"orig_len": 47,
+"target_len": 148,
+"orig": "Update an existing issue in a GitHub repository"
+},
+{
+"case_id": "clean::AWSKnowledgeBase::retrieve_from_aws_kb",
+"split": "tune",
+"server": "AWSKnowledgeBase",
+"orig_len": 94,
+"target_len": 366,
+"orig": "Performs retrieval from the AWS Knowledge Base using the provided query and Knowledge Base ID."
+},
+{
+"case_id": "clean::Slack::slack_add_reaction",
+"split": "tune",
+"server": "Slack",
+"orig_len": 33,
+"target_len": 143,
+"orig": "Add a reaction emoji to a message"
+},
+{
+"case_id": "clean::Slack::slack_get_channel_history",
+"split": "tune",
+"server": "Slack",
+"orig_len": 34,
+"target_len": 371,
+"orig": "Get recent messages from a channel"
+},
+{
+"case_id": "clean::Slack::slack_get_thread_replies",
+"split": "tune",
+"server": "Slack",
+"orig_len": 35,
+"target_len": 144,
+"orig": "Get all replies in a message thread"
+},
+{
+"case_id": "clean::Slack::slack_get_user_profile",
+"split": "tune",
+"server": "Slack",
+"orig_len": 52,
+"target_len": 188,
+"orig": "Get detailed profile information for a specific user"
+},
+{
+"case_id": "clean::Slack::slack_get_users",
+"split": "tune",
+"server": "Slack",
+"orig_len": 77,
+"target_len": 168,
+"orig": "Get a list of all users in the workspace with their basic profile information"
+},
+{
+"case_id": "clean::Slack::slack_list_channels",
+"split": "tune",
+"server": "Slack",
+"orig_len": 68,
+"target_len": 272,
+"orig": "List public or pre-defined channels in the workspace with pagination"
+},
+{
+"case_id": "clean::Slack::slack_post_message",
+"split": "tune",
+"server": "Slack",
+"orig_len": 37,
+"target_len": 378,
+"orig": "Post a new message to a Slack channel"
+},
+{
+"case_id": "clean::Slack::slack_reply_to_thread",
+"split": "tune",
+"server": "Slack",
+"orig_len": 43,
+"target_len": 131,
+"orig": "Reply to a specific message thread in Slack"
+},
+{
+"case_id": "clean::DumplingAI::convert-to-pdf",
+"split": "tune",
+"server": "DumplingAI",
+"orig_len": 36,
+"target_len": 221,
+"orig": "Convert various file formats to PDF."
+},
+{
+"case_id": "clean::DumplingAI::crawl",
+"split": "tune",
+"server": "DumplingAI",
+"orig_len": 47,
+"target_len": 367,
+"orig": "Recursively crawl websites and extract content."
+},
+{
+"case_id": "clean::DumplingAI::doc-to-text",
+"split": "tune",
+"server": "DumplingAI",
+"orig_len": 47,
+"target_len": 289,
+"orig": "Convert various document formats to plain text."
+},
+{
+"case_id": "clean::DumplingAI::extract",
+"split": "tune",
+"server": "DumplingAI",
+"orig_len": 69,
+"target_len": 167,
+"orig": "Extract structured data from web pages using AI-powered instructions."
+},
+{
+"case_id": "clean::DumplingAI::extract-audio",
+"split": "tune",
+"server": "DumplingAI",
+"orig_len": 59,
+"target_len": 380,
+"orig": "Extract structured data from audio files based on a prompt."
+},
+{
+"case_id": "clean::DumplingAI::extract-document",
+"split": "tune",
+"server": "DumplingAI",
+"orig_len": 57,
+"target_len": 240,
+"orig": "Extract structured data from documents based on a prompt."
+},
+{
+"case_id": "clean::DumplingAI::extract-image",
+"split": "tune",
+"server": "DumplingAI",
+"orig_len": 54,
+"target_len": 290,
+"orig": "Extract structured data from images based on a prompt."
+},
+{
+"case_id": "clean::DumplingAI::extract-video",
+"split": "tune",
+"server": "DumplingAI",
+"orig_len": 54,
+"target_len": 191,
+"orig": "Extract structured data from videos based on a prompt."
+},
+{
+"case_id": "clean::DumplingAI::get-autocomplete",
+"split": "tune",
+"server": "DumplingAI",
+"orig_len": 53,
+"target_len": 184,
+"orig": "Retrieve Google autocomplete suggestions for a query."
+},
+{
+"case_id": "clean::DumplingAI::get-google-reviews",
+"split": "tune",
+"server": "DumplingAI",
+"orig_len": 49,
+"target_len": 151,
+"orig": "Retrieve Google reviews for businesses or places."
+},
+{
+"case_id": "clean::DumplingAI::get-youtube-transcript",
+"split": "tune",
+"server": "DumplingAI",
+"orig_len": 105,
+"target_len": 205,
+"orig": "Extract transcripts from YouTube videos with optional parameters for timestamps and language preferences."
+},
+{
+"case_id": "clean::DumplingAI::merge-pdfs",
+"split": "tune",
+"server": "DumplingAI",
+"orig_len": 50,
+"target_len": 253,
+"orig": "Combine multiple PDF files into a single document."
+},
+{
+"case_id": "clean::DumplingAI::read-pdf-metadata",
+"split": "tune",
+"server": "DumplingAI",
+"orig_len": 32,
+"target_len": 215,
+"orig": "Extract metadata from PDF files."
+},
+{
+"case_id": "clean::DumplingAI::scrape",
+"split": "tune",
+"server": "DumplingAI",
+"orig_len": 44,
+"target_len": 294,
+"orig": "Extract and parse content from any web page."
+},
+{
+"case_id": "clean::DumplingAI::screenshot",
+"split": "tune",
+"server": "DumplingAI",
+"orig_len": 60,
+"target_len": 158,
+"orig": "Capture screenshots of web pages with customizable settings."
+},
+{
+"case_id": "clean::DumplingAI::search",
+"split": "tune",
+"server": "DumplingAI",
+"orig_len": 57,
+"target_len": 253,
+"orig": "Perform Google web searches with customizable parameters."
+},
+{
+"case_id": "clean::DumplingAI::search-maps",
+"split": "tune",
+"server": "DumplingAI",
+"orig_len": 48,
+"target_len": 177,
+"orig": "Search Google Maps for locations and businesses."
+},
+{
+"case_id": "clean::DumplingAI::search-news",
+"split": "tune",
+"server": "DumplingAI",
+"orig_len": 49,
+"target_len": 322,
+"orig": "Search for news articles across multiple sources."
+},
+{
+"case_id": "clean::DumplingAI::search-places",
+"split": "tune",
+"server": "DumplingAI",
+"orig_len": 53,
+"target_len": 204,
+"orig": "Search for places with detailed business information."
+},
+{
+"case_id": "clean::DumplingAI::trim-video",
+"split": "tune",
+"server": "DumplingAI",
+"orig_len": 35,
+"target_len": 240,
+"orig": "Trim videos to a specific duration."
+},
+{
+"case_id": "clean::HyperBrowser::create_profile",
+"split": "tune",
+"server": "HyperBrowser",
+"orig_len": 46,
+"target_len": 174,
+"orig": "Creates a new persistent Hyperbrowser profile."
+},
+{
+"case_id": "clean::HyperBrowser::delete_profile",
+"split": "tune",
+"server": "HyperBrowser",
+"orig_len": 52,
+"target_len": 191,
+"orig": "Deletes an existing persistent Hyperbrowser profile."
+},
+{
+"case_id": "clean::HyperBrowser::extract_structured_data",
+"split": "tune",
+"server": "HyperBrowser",
+"orig_len": 118,
+"target_len": 174,
+"orig": "Extract structured data from a webpage. This tool allows you to extract structured data from a webpage using a schema."
+},
+{
+"case_id": "clean::HyperBrowser::list_profiles",
+"split": "tune",
+"server": "HyperBrowser",
+"orig_len": 74,
+"target_len": 330,
+"orig": "Lists existing persistent Hyperbrowser profiles, with optional pagination."
+},
+{
+"case_id": "clean::HyperBrowser::search_with_bing",
+"split": "tune",
+"server": "HyperBrowser",
+"orig_len": 80,
+"target_len": 174,
+"orig": "Search the web using Bing. This tool allows you to search the web using bing.com"
+},
+{
+"case_id": "clean::QuickChart::download_chart",
+"split": "tune",
+"server": "QuickChart",
+"orig_len": 38,
+"target_len": 319,
+"orig": "Download a chart image to a local file"
+},
+{
+"case_id": "clean::QuickChart::generate_chart",
+"split": "tune",
+"server": "QuickChart",
+"orig_len": 33,
+"target_len": 232,
+"orig": "Generate a chart using QuickChart"
+},
+{
+"case_id": "clean::12306-mcp::search",
+"split": "tune",
+"server": "12306-mcp",
+"orig_len": 10,
+"target_len": 196,
+"orig": "查询12306火车票"
+},
+{
+"case_id": "clean::Redis::delete",
+"split": "tune",
+"server": "Redis",
+"orig_len": 34,
+"target_len": 143,
+"orig": "Delete one or more keys from Redis"
+},
+{
+"case_id": "clean::Redis::get",
+"split": "tune",
+"server": "Redis",
+"orig_len": 27,
+"target_len": 320,
+"orig": "Get value by key from Redis"
+},
+{
+"case_id": "clean::Redis::list",
+"split": "tune",
+"server": "Redis",
+"orig_len": 34,
+"target_len": 342,
+"orig": "List Redis keys matching a pattern"
+},
+{
+"case_id": "clean::Redis::set",
+"split": "tune",
+"server": "Redis",
+"orig_len": 51,
+"target_len": 156,
+"orig": "Set a Redis key-value pair with optional expiration"
+},
+{
+"case_id": "clean::Everything::add",
+"split": "tune",
+"server": "Everything",
+"orig_len": 16,
+"target_len": 144,
+"orig": "Adds two numbers"
+},
+{
+"case_id": "clean::Everything::annotatedMessage",
+"split": "tune",
+"server": "Everything",
+"orig_len": 74,
+"target_len": 198,
+"orig": "Demonstrates how annotations can be used to provide metadata about content"
+},
+{
+"case_id": "clean::Everything::echo",
+"split": "tune",
+"server": "Everything",
+"orig_len": 21,
+"target_len": 215,
+"orig": "Echoes back the input"
+},
+{
+"case_id": "clean::Everything::getResourceReference",
+"split": "tune",
+"server": "Everything",
+"orig_len": 60,
+"target_len": 267,
+"orig": "Returns a resource reference that can be used by MCP clients"
+},
+{
+"case_id": "clean::Everything::getTinyImage",
+"split": "tune",
+"server": "Everything",
+"orig_len": 26,
+"target_len": 188,
+"orig": "Returns the MCP_TINY_IMAGE"
+},
+{
+"case_id": "clean::Everything::longRunningOperation",
+"split": "tune",
+"server": "Everything",
+"orig_len": 59,
+"target_len": 199,
+"orig": "Demonstrates a long running operation with progress updates"
+},
+{
+"case_id": "clean::Everything::printEnv",
+"split": "tune",
+"server": "Everything",
+"orig_len": 80,
+"target_len": 118,
+"orig": "Prints all environment variables, helpful for debugging MCP server configuration"
+},
+{
+"case_id": "clean::Everything::sampleLLM",
+"split": "tune",
+"server": "Everything",
+"orig_len": 48,
+"target_len": 120,
+"orig": "Samples from an LLM using MCP's sampling feature"
+},
+{
+"case_id": "clean::E2B::run_code",
+"split": "tune",
+"server": "E2B",
+"orig_len": 78,
+"target_len": 226,
+"orig": "Run python code in a secure sandbox by E2B. Using the Jupyter Notebook syntax."
+},
+{
+"case_id": "clean::gNucleus Text to CAD::text_to_cad",
+"split": "tune",
+"server": "gNucleus Text to CAD",
+"orig_len": 104,
+"target_len": 238,
+"orig": "Transform a text prompt into a CAD Part or CAD Assembly and\nreturn a markdown summary plus a viewer URL."
+},
+{
+"case_id": "clean::Gyazo::gyazo_image",
+"split": "tune",
+"server": "Gyazo",
+"orig_len": 43,
+"target_len": 302,
+"orig": "Fetch image content and metadata from Gyazo"
+},
+{
+"case_id": "clean::Gyazo::gyazo_latest_image",
+"split": "tune",
+"server": "Gyazo",
+"orig_len": 59,
+"target_len": 143,
+"orig": "Fetch latest uploaded image content and metadata from Gyazo"
+},
+{
+"case_id": "clean::Gyazo::gyazo_search",
+"split": "tune",
+"server": "Gyazo",
+"orig_len": 56,
+"target_len": 278,
+"orig": "Full-text search for captures uploaded by users on Gyazo"
+},
+{
+"case_id": "clean::Gyazo::gyazo_upload",
+"split": "tune",
+"server": "Gyazo",
+"orig_len": 24,
+"target_len": 121,
+"orig": "Upload an image to Gyazo"
+},
+{
+"case_id": "clean::mcp-simple-arxiv::get_paper_data",
+"split": "tune",
+"server": "mcp-simple-arxiv",
+"orig_len": 88,
+"target_len": 131,
+"orig": "Get detailed information about a specific paper including abstract and available formats"
+},
+{
+"case_id": "clean::mcp-simple-arxiv::list_categories",
+"split": "tune",
+"server": "mcp-simple-arxiv",
+"orig_len": 65,
+"target_len": 297,
+"orig": "List all available arXiv categories and how to use them in search"
+},
+{
+"case_id": "clean::mcp-simple-arxiv::update_categories",
+"split": "tune",
+"server": "mcp-simple-arxiv",
+"orig_len": 81,
+"target_len": 168,
+"orig": "Update the stored category taxonomy by fetching the latest version from arxiv.org"
+},
+{
+"case_id": "clean::Memory::add_observations",
+"split": "tune",
+"server": "Memory",
+"orig_len": 64,
+"target_len": 322,
+"orig": "Add new observations to existing entities in the knowledge graph"
+},
+{
+"case_id": "clean::Memory::create_entities",
+"split": "tune",
+"server": "Memory",
+"orig_len": 51,
+"target_len": 224,
+"orig": "Create multiple new entities in the knowledge graph"
+},
+{
+"case_id": "clean::Memory::create_relations",
+"split": "tune",
+"server": "Memory",
+"orig_len": 106,
+"target_len": 332,
+"orig": "Create multiple new relations between entities in the knowledge graph. Relations should be in active voice"
+},
+{
+"case_id": "clean::Memory::delete_entities",
+"split": "tune",
+"server": "Memory",
+"orig_len": 80,
+"target_len": 191,
+"orig": "Delete multiple entities and their associated relations from the knowledge graph"
+},
+{
+"case_id": "clean::Memory::delete_observations",
+"split": "tune",
+"server": "Memory",
+"orig_len": 65,
+"target_len": 278,
+"orig": "Delete specific observations from entities in the knowledge graph"
+},
+{
+"case_id": "clean::Memory::delete_relations",
+"split": "tune",
+"server": "Memory",
+"orig_len": 50,
+"target_len": 247,
+"orig": "Delete multiple relations from the knowledge graph"
+},
+{
+"case_id": "clean::Memory::open_nodes",
+"split": "tune",
+"server": "Memory",
+"orig_len": 57,
+"target_len": 577,
+"orig": "Open specific nodes in the knowledge graph by their names"
+},
+{
+"case_id": "clean::Memory::read_graph",
+"split": "tune",
+"server": "Memory",
+"orig_len": 31,
+"target_len": 271,
+"orig": "Read the entire knowledge graph"
+},
+{
+"case_id": "clean::Memory::search_nodes",
+"split": "tune",
+"server": "Memory",
+"orig_len": 56,
+"target_len": 166,
+"orig": "Search for nodes in the knowledge graph based on a query"
+},
+{
+"case_id": "clean::AlphaVantage::analytics_fixed_window",
+"split": "tune",
+"server": "AlphaVantage",
+"orig_len": 28,
+"target_len": 213,
+"orig": "Fetch analytics fixed window"
+},
+{
+"case_id": "clean::AlphaVantage::analytics_sliding_window",
+"split": "tune",
+"server": "AlphaVantage",
+"orig_len": 30,
+"target_len": 250,
+"orig": "Fetch analytics sliding window"
+},
+{
+"case_id": "clean::AlphaVantage::company_overview",
+"split": "tune",
+"server": "AlphaVantage",
+"orig_len": 22,
+"target_len": 445,
+"orig": "Fetch company overview"
+},
+{
+"case_id": "clean::AlphaVantage::etf_profile",
+"split": "tune",
+"server": "AlphaVantage",
+"orig_len": 17,
+"target_len": 212,
+"orig": "Fetch ETF profile"
+},
+{
+"case_id": "clean::AlphaVantage::historical_options",
+"split": "tune",
+"server": "AlphaVantage",
+"orig_len": 24,
+"target_len": 236,
+"orig": "Fetch historical options"
+},
+{
+"case_id": "clean::AlphaVantage::insider_transactions",
+"split": "tune",
+"server": "AlphaVantage",
+"orig_len": 26,
+"target_len": 129,
+"orig": "Fetch insider transactions"
+},
+{
+"case_id": "clean::AlphaVantage::market_status",
+"split": "tune",
+"server": "AlphaVantage",
+"orig_len": 19,
+"target_len": 114,
+"orig": "Fetch market status"
+},
+{
+"case_id": "clean::AlphaVantage::news_sentiment",
+"split": "tune",
+"server": "AlphaVantage",
+"orig_len": 20,
+"target_len": 243,
+"orig": "Fetch news sentiment"
+},
+{
+"case_id": "clean::AlphaVantage::realtime_bulk_quotes",
+"split": "tune",
+"server": "AlphaVantage",
+"orig_len": 27,
+"target_len": 113,
+"orig": "Fetch real time bulk quotes"
+},
+{
+"case_id": "clean::AlphaVantage::realtime_options",
+"split": "tune",
+"server": "AlphaVantage",
+"orig_len": 22,
+"target_len": 248,
+"orig": "Fetch realtime options"
+},
+{
+"case_id": "clean::AlphaVantage::stock_quote",
+"split": "tune",
+"server": "AlphaVantage",
+"orig_len": 19,
+"target_len": 309,
+"orig": "Fetch a stock quote"
+},
+{
+"case_id": "clean::AlphaVantage::symbol_search",
+"split": "tune",
+"server": "AlphaVantage",
+"orig_len": 15,
+"target_len": 333,
+"orig": "Search endpoint"
+},
+{
+"case_id": "clean::AlphaVantage::time_series_daily",
+"split": "tune",
+"server": "AlphaVantage",
+"orig_len": 25,
+"target_len": 236,
+"orig": "Fetch a time series daily"
+},
+{
+"case_id": "clean::AlphaVantage::time_series_daily_adjusted",
+"split": "tune",
+"server": "AlphaVantage",
+"orig_len": 34,
+"target_len": 344,
+"orig": "Fetch a time series daily adjusted"
+},
+{
+"case_id": "clean::AlphaVantage::time_series_intraday",
+"split": "tune",
+"server": "AlphaVantage",
+"orig_len": 28,
+"target_len": 220,
+"orig": "Fetch a time series intraday"
+},
+{
+"case_id": "clean::AlphaVantage::time_series_monthly",
+"split": "tune",
+"server": "AlphaVantage",
+"orig_len": 27,
+"target_len": 343,
+"orig": "Fetch a time series monthly"
+},
+{
+"case_id": "clean::AlphaVantage::time_series_monthly_adjusted",
+"split": "tune",
+"server": "AlphaVantage",
+"orig_len": 36,
+"target_len": 135,
+"orig": "Fetch a time series monthly adjusted"
+},
+{
+"case_id": "clean::AlphaVantage::time_series_weekly",
+"split": "tune",
+"server": "AlphaVantage",
+"orig_len": 26,
+"target_len": 314,
+"orig": "Fetch a time series weekly"
+},
+{
+"case_id": "clean::AlphaVantage::time_series_weekly_adjusted",
+"split": "tune",
+"server": "AlphaVantage",
+"orig_len": 35,
+"target_len": 137,
+"orig": "Fetch a time series weekly adjusted"
+},
+{
+"case_id": "clean::AlphaVantage::top_gainers_losers",
+"split": "tune",
+"server": "AlphaVantage",
+"orig_len": 28,
+"target_len": 234,
+"orig": "Fetch top gainers and losers"
+},
+{
+"case_id": "clean::Git::git_add",
+"split": "tune",
+"server": "Git",
+"orig_len": 38,
+"target_len": 233,
+"orig": "Adds file contents to the staging area"
+},
+{
+"case_id": "clean::Git::git_checkout",
+"split": "tune",
+"server": "Git",
+"orig_len": 17,
+"target_len": 371,
+"orig": "Switches branches"
+},
+{
+"case_id": "clean::Git::git_commit",
+"split": "tune",
+"server": "Git",
+"orig_len": 33,
+"target_len": 278,
+"orig": "Records changes to the repository"
+},
+{
+"case_id": "clean::Git::git_create_branch",
+"split": "tune",
+"server": "Git",
+"orig_len": 49,
+"target_len": 171,
+"orig": "Creates a new branch from an optional base branch"
+},
+{
+"case_id": "clean::Git::git_diff",
+"split": "tune",
+"server": "Git",
+"orig_len": 45,
+"target_len": 273,
+"orig": "Shows differences between branches or commits"
+},
+{
+"case_id": "clean::Git::git_diff_staged",
+"split": "tune",
+"server": "Git",
+"orig_len": 40,
+"target_len": 171,
+"orig": "Shows changes that are staged for commit"
+},
+{
+"case_id": "clean::Git::git_diff_unstaged",
+"split": "tune",
+"server": "Git",
+"orig_len": 62,
+"target_len": 199,
+"orig": "Shows changes in the working directory that are not yet staged"
+},
+{
+"case_id": "clean::Git::git_log",
+"split": "tune",
+"server": "Git",
+"orig_len": 21,
+"target_len": 194,
+"orig": "Shows the commit logs"
+},
+{
+"case_id": "clean::Git::git_reset",
+"split": "tune",
+"server": "Git",
+"orig_len": 27,
+"target_len": 233,
+"orig": "Unstages all staged changes"
+},
+{
+"case_id": "clean::Git::git_show",
+"split": "tune",
+"server": "Git",
+"orig_len": 30,
+"target_len": 119,
+"orig": "Shows the contents of a commit"
+},
+{
+"case_id": "clean::Git::git_status",
+"split": "tune",
+"server": "Git",
+"orig_len": 29,
+"target_len": 213,
+"orig": "Shows the working tree status"
+},
+{
+"case_id": "clean::GoogleDrive::search",
+"split": "tune",
+"server": "GoogleDrive",
+"orig_len": 32,
+"target_len": 121,
+"orig": "Search for files in Google Drive"
+},
+{
+"case_id": "clean::Google Maps::maps_directions",
+"split": "tune",
+"server": "Google Maps",
+"orig_len": 33,
+"target_len": 168,
+"orig": "Get directions between two points"
+},
+{
+"case_id": "clean::Google Maps::maps_distance_matrix",
+"split": "tune",
+"server": "Google Maps",
+"orig_len": 72,
+"target_len": 248,
+"orig": "Calculate travel distance and time for multiple origins and destinations"
+},
+{
+"case_id": "clean::Google Maps::maps_elevation",
+"split": "tune",
+"server": "Google Maps",
+"orig_len": 45,
+"target_len": 171,
+"orig": "Get elevation data for locations on the earth"
+},
+{
+"case_id": "clean::Google Maps::maps_geocode",
+"split": "tune",
+"server": "Google Maps",
+"orig_len": 46,
+"target_len": 108,
+"orig": "Convert an address into geographic coordinates"
+},
+{
+"case_id": "clean::Google Maps::maps_place_details",
+"split": "tune",
+"server": "Google Maps",
+"orig_len": 47,
+"target_len": 405,
+"orig": "Get detailed information about a specific place"
+},
+{
+"case_id": "clean::Google Maps::maps_reverse_geocode",
+"split": "tune",
+"server": "Google Maps",
+"orig_len": 35,
+"target_len": 153,
+"orig": "Convert coordinates into an address"
+},
+{
+"case_id": "clean::Google Maps::maps_search_places",
+"split": "tune",
+"server": "Google Maps",
+"orig_len": 41,
+"target_len": 307,
+"orig": "Search for places using Google Places API"
+},
+{
+"case_id": "clean::Apify::get-actor-log",
+"split": "tune",
+"server": "Apify",
+"orig_len": 79,
+"target_len": 185,
+"orig": "Retrieves logs for a specific Actor run. Returns the log content as plain text."
+},
+{
+"case_id": "clean::OP.GG::esports-lol-schedules",
+"split": "tune",
+"server": "OP.GG",
+"orig_len": 33,
+"target_len": 556,
+"orig": "Get upcoming LoL match schedules."
+},
+{
+"case_id": "clean::OP.GG::esports-lol-team-standings",
+"split": "tune",
+"server": "OP.GG",
+"orig_len": 36,
+"target_len": 549,
+"orig": "Get team standings for a LoL league."
+},
+{
+"case_id": "clean::OP.GG::lol-champion-meta-data",
+"split": "tune",
+"server": "OP.GG",
+"orig_len": 90,
+"target_len": 494,
+"orig": "Retrieves meta data for a specific champion, including statistics and performance metrics."
+},
+{
+"case_id": "clean::OP.GG::lol-champion-skin-sale",
+"split": "tune",
+"server": "OP.GG",
+"orig_len": 70,
+"target_len": 197,
+"orig": "Retrieves information about champion skins that are currently on sale."
+},
+{
+"case_id": "clean::OP.GG::lol-summoner-renewal",
+"split": "tune",
+"server": "OP.GG",
+"orig_len": 162,
+"target_len": 266,
+"orig": "Renew the summoner's data of OP.GG through RiotAPI. When you retrieve summoner data, you *must* always call this function first, and then call the next functions."
+},
+{
+"case_id": "clean::OP.GG::tft-champion-item-build",
+"split": "tune",
+"server": "OP.GG",
+"orig_len": 56,
+"target_len": 162,
+"orig": "TFT tool for retrieving champion item build information."
+},
+{
+"case_id": "clean::OP.GG::tft-meta-item-combinations",
+"split": "tune",
+"server": "OP.GG",
+"orig_len": 72,
+"target_len": 128,
+"orig": "TFT tool for retrieving information about item combinations and recipes."
+},
+{
+"case_id": "clean::OP.GG::tft-meta-trend-deck-list",
+"split": "tune",
+"server": "OP.GG",
+"orig_len": 53,
+"target_len": 191,
+"orig": "TFT deck list tool for retrieving current meta decks."
+},
+{
+"case_id": "clean::OP.GG::tft-play-style-comment",
+"split": "tune",
+"server": "OP.GG",
+"orig_len": 62,
+"target_len": 166,
+"orig": "This tool provides comments on the playstyle of TFT champions."
+},
+{
+"case_id": "clean::OP.GG::tft-recommend-champion-for-item",
+"split": "tune",
+"server": "OP.GG",
+"orig_len": 69,
+"target_len": 141,
+"orig": "TFT tool for retrieving champion recommendations for a specific item."
+},
+{
+"case_id": "clean::OP.GG::valorant-agents-composition-with-map",
+"split": "tune",
+"server": "OP.GG",
+"orig_len": 51,
+"target_len": 222,
+"orig": "Retrieve agent composition data for a Valorant map."
+},
+{
+"case_id": "clean::OP.GG::valorant-characters-statistics",
+"split": "tune",
+"server": "OP.GG",
+"orig_len": 76,
+"target_len": 333,
+"orig": "Retrieve character statistics data for Valorant, optionally filtered by map."
+},
+{
+"case_id": "clean::OP.GG::valorant-leaderboard",
+"split": "tune",
+"server": "OP.GG",
+"orig_len": 36,
+"target_len": 158,
+"orig": "Fetch Valorant leaderboard by region"
+},
+{
+"case_id": "clean::OP.GG::valorant-meta-characters",
+"split": "tune",
+"server": "OP.GG",
+"orig_len": 28,
+"target_len": 303,
+"orig": "Valorant character meta data"
+},
+{
+"case_id": "clean::OP.GG::valorant-meta-maps",
+"split": "tune",
+"server": "OP.GG",
+"orig_len": 22,
+"target_len": 212,
+"orig": "Valorant map meta data"
+},
+{
+"case_id": "clean::Tavily::tavily-extract",
+"split": "tune",
+"server": "Tavily",
+"orig_len": 165,
+"target_len": 305,
+"orig": "A powerful web content extraction tool that retrieves and processes raw content from specified URLs, ideal for data collection, content analysis, and research tasks."
+},
+{
+"case_id": "clean::Prisma::Prisma-Login",
+"split": "tune",
+"server": "Prisma",
+"orig_len": 70,
+"target_len": 172,
+"orig": "Login or create an account in order to be able to use Prisma Postgres."
+},
+{
+"case_id": "clean::KeywordsPeopleUse::forums",
+"split": "val",
+"server": "KeywordsPeopleUse",
+"orig_len": 48,
+"target_len": 207,
+"orig": "Get Reddit and Quora questions for a given query"
+},
+{
+"case_id": "clean::KeywordsPeopleUse::google-autocomplete",
+"split": "val",
+"server": "KeywordsPeopleUse",
+"orig_len": 53,
+"target_len": 162,
+"orig": "Get Google Autocomplete suggestions for a given query"
+},
+{
+"case_id": "clean::KeywordsPeopleUse::people-also-ask",
+"split": "val",
+"server": "KeywordsPeopleUse",
+"orig_len": 47,
+"target_len": 294,
+"orig": "Get People Also Ask questions for a given query"
+},
+{
+"case_id": "clean::KeywordsPeopleUse::semantic-keywords",
+"split": "val",
+"server": "KeywordsPeopleUse",
+"orig_len": 58,
+"target_len": 346,
+"orig": "Get Semantic (similar, related) keywords for a given query"
+},
+{
+"case_id": "clean::Commander::force_terminate",
+"split": "val",
+"server": "Commander",
+"orig_len": 43,
+"target_len": 291,
+"orig": "Force terminate a running terminal session."
+},
+{
+"case_id": "clean::Commander::kill_process",
+"split": "val",
+"server": "Commander",
+"orig_len": 109,
+"target_len": 503,
+"orig": "Terminate a running process by PID. Use with caution as this will forcefully terminate the specified process."
+},
+{
+"case_id": "clean::Commander::list_processes",
+"split": "val",
+"server": "Commander",
+"orig_len": 113,
+"target_len": 307,
+"orig": "List all running processes. Returns process information including PID, command name, CPU usage, and memory usage."
+},
+{
+"case_id": "clean::Commander::list_sessions",
+"split": "val",
+"server": "Commander",
+"orig_len": 34,
+"target_len": 158,
+"orig": "List all active terminal sessions."
+},
+{
+"case_id": "clean::Commander::read_output",
+"split": "val",
+"server": "Commander",
+"orig_len": 48,
+"target_len": 147,
+"orig": "Read new output from a running terminal session."
+},
+{
+"case_id": "clean::wechat::check-whatsapp-status",
+"split": "val",
+"server": "wechat",
+"orig_len": 38,
+"target_len": 151,
+"orig": "Check if WhatsApp is currently running"
+},
+{
+"case_id": "clean::wechat::list-recent-contacts",
+"split": "val",
+"server": "wechat",
+"orig_len": 55,
+"target_len": 237,
+"orig": "List recently contacted people on WhatsApp (simplified)"
+},
+{
+"case_id": "clean::wechat::send-whatsapp-message",
+"split": "val",
+"server": "wechat",
+"orig_len": 39,
+"target_len": 309,
+"orig": "Send a message to a contact on WhatsApp"
+},
+{
+"case_id": "clean::Codacy::codacy_get_file_coverage",
+"split": "val",
+"server": "Codacy",
+"orig_len": 78,
+"target_len": 133,
+"orig": "Get coverage information for a file in the head commit of a repository branch."
+},
+{
+"case_id": "clean::Codacy::codacy_get_issue",
+"split": "val",
+"server": "Codacy",
+"orig_len": 74,
+"target_len": 228,
+"orig": "Returns information about an open issue that Codacy found in a repository."
+},
+{
+"case_id": "clean::Codacy::codacy_get_pull_request_git_diff",
+"split": "val",
+"server": "Codacy",
+"orig_len": 53,
+"target_len": 158,
+"orig": "Returns the human-readable Git diff of a pull request"
+},
+{
+"case_id": "clean::Codacy::codacy_get_repository_pull_request",
+"split": "val",
+"server": "Codacy",
+"orig_len": 106,
+"target_len": 235,
+"orig": "Get the pull request information for a repository. The response contains the analysis of the pull request."
+},
+{
+"case_id": "clean::Codacy::codacy_list_repository_pull_requests",
+"split": "val",
+"server": "Codacy",
+"orig_len": 146,
+"target_len": 182,
+"orig": "List pull requests from a repository that the user has access to. You can search this endpoint for either last-updated (default), impact or merged"
+},
+{
+"case_id": "clean::Codacy::codacy_list_repository_tool_patterns",
+"split": "val",
+"server": "Codacy",
+"orig_len": 65,
+"target_len": 113,
+"orig": "List the patterns of a tool available for a repository in Codacy."
+},
+{
+"case_id": "clean::Codacy::codacy_list_repository_tools",
+"split": "val",
+"server": "Codacy",
+"orig_len": 123,
+"target_len": 358,
+"orig": "Get analysis tools settings of a repository. This endpoint returns the analysis tools available in Codacy for a repository."
+},
+{
+"case_id": "clean::Codacy::codacy_list_tools",
+"split": "val",
+"server": "Codacy",
+"orig_len": 49,
+"target_len": 156,
+"orig": "List all code analysis tools available in Codacy."
+},
+{
+"case_id": "clean::ClickHouse::list_databases",
+"split": "val",
+"server": "ClickHouse",
+"orig_len": 35,
+"target_len": 266,
+"orig": "List available ClickHouse databases"
+},
+{
+"case_id": "clean::ClickHouse::list_tables",
+"split": "val",
+"server": "ClickHouse",
+"orig_len": 103,
+"target_len": 213,
+"orig": "List available ClickHouse tables in a database, including schema, comment,\nrow count, and column count."
+},
+{
+"case_id": "clean::ClickHouse::run_select_query",
+"split": "val",
+"server": "ClickHouse",
+"orig_len": 43,
+"target_len": 121,
+"orig": "Run a SELECT query in a ClickHouse database"
+},
+{
+"case_id": "clean::Claude Post::count-daily-emails",
+"split": "test",
+"server": "Claude Post",
+"orig_len": 50,
+"target_len": 549,
+"orig": "Count emails received for each day in a date range"
+},
+{
+"case_id": "clean::Claude Post::get-email-content",
+"split": "test",
+"server": "Claude Post",
+"orig_len": 50,
+"target_len": 262,
+"orig": "Get the full content of a specific email by its ID"
+},
+{
+"case_id": "clean::Claude Post::search-emails",
+"split": "test",
+"server": "Claude Post",
+"orig_len": 63,
+"target_len": 183,
+"orig": "Search emails within a date range and/or with specific keywords"
+},
+{
+"case_id": "clean::SQLite::append_insight",
+"split": "test",
+"server": "SQLite",
+"orig_len": 34,
+"target_len": 230,
+"orig": "Add a business insight to the memo"
+},
+{
+"case_id": "clean::SQLite::create_table",
+"split": "test",
+"server": "SQLite",
+"orig_len": 41,
+"target_len": 143,
+"orig": "Create a new table in the SQLite database"
+},
+{
+"case_id": "clean::SQLite::describe_table",
+"split": "test",
+"server": "SQLite",
+"orig_len": 47,
+"target_len": 178,
+"orig": "Get the schema information for a specific table"
+},
+{
+"case_id": "clean::SQLite::list_tables",
+"split": "test",
+"server": "SQLite",
+"orig_len": 38,
+"target_len": 312,
+"orig": "List all tables in the SQLite database"
+},
+{
+"case_id": "clean::SQLite::read_query",
+"split": "test",
+"server": "SQLite",
+"orig_len": 45,
+"target_len": 383,
+"orig": "Execute a SELECT query on the SQLite database"
+},
+{
+"case_id": "clean::SQLite::write_query",
+"split": "test",
+"server": "SQLite",
+"orig_len": 65,
+"target_len": 393,
+"orig": "Execute an INSERT, UPDATE, or DELETE query on the SQLite database"
+},
+{
+"case_id": "clean::GitLab::create_branch",
+"split": "test",
+"server": "GitLab",
+"orig_len": 39,
+"target_len": 231,
+"orig": "Create a new branch in a GitLab project"
+},
+{
+"case_id": "clean::GitLab::create_issue",
+"split": "test",
+"server": "GitLab",
+"orig_len": 38,
+"target_len": 132,
+"orig": "Create a new issue in a GitLab project"
+},
+{
+"case_id": "clean::GitLab::create_merge_request",
+"split": "test",
+"server": "GitLab",
+"orig_len": 46,
+"target_len": 212,
+"orig": "Create a new merge request in a GitLab project"
+},
+{
+"case_id": "clean::GitLab::create_or_update_file",
+"split": "test",
+"server": "GitLab",
+"orig_len": 50,
+"target_len": 138,
+"orig": "Create or update a single file in a GitLab project"
+},
+{
+"case_id": "clean::GitLab::create_repository",
+"split": "test",
+"server": "GitLab",
+"orig_len": 27,
+"target_len": 795,
+"orig": "Create a new GitLab project"
+},
+{
+"case_id": "clean::GitLab::fork_repository",
+"split": "test",
+"server": "GitLab",
+"orig_len": 60,
+"target_len": 361,
+"orig": "Fork a GitLab project to your account or specified namespace"
+},
+{
+"case_id": "clean::GitLab::get_file_contents",
+"split": "test",
+"server": "GitLab",
+"orig_len": 61,
+"target_len": 1052,
+"orig": "Get the contents of a file or directory from a GitLab project"
+},
+{
+"case_id": "clean::GitLab::push_files",
+"split": "test",
+"server": "GitLab",
+"orig_len": 58,
+"target_len": 169,
+"orig": "Push multiple files to a GitLab project in a single commit"
+},
+{
+"case_id": "clean::GitLab::search_repositories",
+"split": "test",
+"server": "GitLab",
+"orig_len": 26,
+"target_len": 302,
+"orig": "Search for GitLab projects"
+},
+{
+"case_id": "clean::AgentQL::extract-web-data",
+"split": "test",
+"server": "AgentQL",
+"orig_len": 110,
+"target_len": 287,
+"orig": "Extracts structured data as JSON from a web page given a URL using a Natural Language description of the data."
+},
+{
+"case_id": "clean::BaiduMap::map_directions",
+"split": "test",
+"server": "BaiduMap",
+"orig_len": 30,
+"target_len": 353,
+"orig": "路线规划服务， 计算出发地到目的地的距离、路线用时、路线方案"
+},
+{
+"case_id": "clean::BaiduMap::map_distance_matrix",
+"split": "test",
+"server": "BaiduMap",
+"orig_len": 19,
+"target_len": 339,
+"orig": "计算多个出发地和目的地的距离和路线用时"
+},
+{
+"case_id": "clean::BaiduMap::map_geocode",
+"split": "test",
+"server": "BaiduMap",
+"orig_len": 6,
+"target_len": 228,
+"orig": "地理编码服务"
+},
+{
+"case_id": "clean::BaiduMap::map_ip_location",
+"split": "test",
+"server": "BaiduMap",
+"orig_len": 12,
+"target_len": 189,
+"orig": "通过IP地址获取位置信息"
+},
+{
+"case_id": "clean::BaiduMap::map_place_details",
+"split": "test",
+"server": "BaiduMap",
+"orig_len": 8,
+"target_len": 386,
+"orig": "地点详情检索服务"
+},
+{
+"case_id": "clean::BaiduMap::map_poi_extract",
+"split": "test",
+"server": "BaiduMap",
+"orig_len": 7,
+"target_len": 283,
+"orig": "POI智能标注"
+},
+{
+"case_id": "clean::BaiduMap::map_reverse_geocode",
+"split": "test",
+"server": "BaiduMap",
+"orig_len": 7,
+"target_len": 262,
+"orig": "全球逆地理编码"
+},
+{
+"case_id": "clean::BaiduMap::map_road_traffic",
+"split": "test",
+"server": "BaiduMap",
+"orig_len": 40,
+"target_len": 207,
+"orig": "根据城市和道路名称查询具体道路的实时拥堵评价和拥堵路段、拥堵距离、拥堵趋势等信息"
+},
+{
+"case_id": "clean::BaiduMap::map_search_places",
+"split": "test",
+"server": "BaiduMap",
+"orig_len": 29,
+"target_len": 439,
+"orig": "地点检索服务（包括城市检索、圆形区域检索、多边形区域检索）"
+},
+{
+"case_id": "clean::BaiduMap::map_weather",
+"split": "test",
+"server": "BaiduMap",
+"orig_len": 32,
+"target_len": 210,
+"orig": "通过行政区划代码或者经纬度坐标获取实时天气信息和未来5天天气预报"
+},
+{
+"case_id": "clean::Financial Dataset::get_available_crypto_tickers",
+"split": "test",
+"server": "Financial Dataset",
+"orig_len": 34,
+"target_len": 287,
+"orig": "Gets all available crypto tickers."
+},
+{
+"case_id": "clean::Financial Dataset::get_company_news",
+"split": "test",
+"server": "Financial Dataset",
+"orig_len": 98,
+"target_len": 192,
+"orig": "Get news for a company.\n\n    Args:\n        ticker: Ticker symbol of the company (e.g. AAPL, GOOGL)"
+},
+{
+"case_id": "clean::Financial Dataset::get_crypto_prices",
+"split": "test",
+"server": "Financial Dataset",
+"orig_len": 45,
+"target_len": 290,
+"orig": "Gets historical prices for a crypto currency."
+},
+{
+"case_id": "clean::Financial Dataset::get_current_stock_price",
+"split": "test",
+"server": "Financial Dataset",
+"orig_len": 119,
+"target_len": 203,
+"orig": "Get the current / latest price of a company.\n\n    Args:\n        ticker: Ticker symbol of the company (e.g. AAPL, GOOGL)"
+}
+]
