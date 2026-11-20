@@ -28,3 +28,6 @@ __pycache__/
 attacker/rewrite_prompt.txt
 .DS_Store
 checkpoints/
+
+# RQ3 generated poisoned specs + task set (derived from MCPTox; keep out of git)
+configs/exp3/generated/
