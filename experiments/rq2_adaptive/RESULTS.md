@@ -307,8 +307,13 @@ cannot survive paraphrase).
 ## 7. Limitations
 
 - **The judge is an LLM, not ground truth.** "Preserved" is qwen's call (cross-family to avoid
-  grading gpt-oss output). A **hand spot-check of a sample of the 231 preserved evasions has not yet
-  been done** and should be before the number goes in the report.
+  grading gpt-oss output). **Spot-check (2026-11-19):** a stratified 24-case sample of the 231
+  preserved-evasions was independently re-reviewed by a second model (Claude), case by case
+  (original vs. evading rewrite) — **24/24 agreement** with qwen's "preserved". So the 28.4% / 5.6%
+  numbers are not inflated by a lenient judge. Caveat: this is a cross-model check, not human
+  adjudication, and a few preserved attacks are intrinsically *soft* (subtle data-tampering /
+  service-disruption actions in the MCPTox data), which the judge correctly tracks as preserved; a
+  human sample before final publication is still worthwhile.
 - **Black-box, budget-limited, per-item.** The attacker only sees verdicts/scores (no gradients),
   is capped at 7 tries, and does not learn across descriptions. A stronger adaptive attacker would
   likely evade more; these are lower bounds.
