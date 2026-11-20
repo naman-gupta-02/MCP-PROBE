@@ -25,7 +25,7 @@ could be keying on **length**, not content. Length-matching the clean tools and 
 length *was* a real shortcut (a length-only rule's false positives jump 30%→77%), but retraining on
 length-controlled data debiases the classifier (Base E5 Full: 100% recall at 0% classifier false
 positives). So the RQ1 numbers should be read with length controlled. See
-[clean_padding/README.md](clean_padding/RESULTS.md).
+[clean_padding/README.md](clean_padding/README.md).
 
 ## How the three fit together
 
