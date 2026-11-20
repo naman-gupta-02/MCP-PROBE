@@ -20,6 +20,7 @@ it is a separate step from the offline-testable bridge below.
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 import tempfile
 from contextlib import asynccontextmanager
@@ -87,11 +88,24 @@ async def proxied_tools(base_config: str | Path, run_id: str, call_log_dir: str 
         yield client, [_bridge_tool(client, t) for t in listed.tools], call_log_path
 
 
+def _ensure_groq_key() -> None:
+    """ChatGroq wants a single GROQ_API_KEY. Load .env and, if only the project's
+    comma-separated GROQ_API_KEYS is set, use its first key."""
+    from attacker.llm import load_dotenv
+
+    load_dotenv()
+    if not os.environ.get("GROQ_API_KEY"):
+        keys = [k.strip() for k in os.environ.get("GROQ_API_KEYS", "").split(",") if k.strip()]
+        if keys:
+            os.environ["GROQ_API_KEY"] = keys[0]
+
+
 def build_agent(tools, model: str = DEFAULT_MODEL, temperature: float = 0.0, system: str | None = None):
     """A ReAct agent over the bridged tools. Imported lazily so the bridge stays testable offline."""
     from langchain_groq import ChatGroq
     from langgraph.prebuilt import create_react_agent
 
+    _ensure_groq_key()
     llm = ChatGroq(model=model, temperature=temperature)
     return create_react_agent(llm, tools, prompt=system)
 

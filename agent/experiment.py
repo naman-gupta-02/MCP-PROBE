@@ -55,35 +55,38 @@ def run_id_for(task_id: str, condition: str, trial: int) -> str:
     return _safe(f"{task_id}__{condition}__t{trial}")
 
 
-def decisions_path_for(condition_config: str | Path, run_id: str) -> Path:
+def decisions_path_for(condition_config: str | Path, upstream_name: str, run_id: str) -> Path:
     """Where the proxy writes its allow/block decisions for this run.
 
     Mirrors proxy.decision_log: ``<log_dir>/<run_id>.<upstream>.decisions.jsonl``.
-    Read from the base condition config (log_dir and upstream name are not
-    changed by the per-task spec override below)."""
+    ``upstream_name`` is the resolved name from ``_config_for_task`` so it matches
+    whatever the proxy actually used (the spec's name when the task overrides it)."""
     cfg = yaml.safe_load(Path(condition_config).read_text(encoding="utf-8"))
     log_dir = cfg.get("log_dir", "results/proxy_logs")
-    upstream = cfg.get("upstream", {}).get("name", "upstream")
-    return Path(log_dir) / f"{run_id}.{upstream}.decisions.jsonl"
+    return Path(log_dir) / f"{run_id}.{upstream_name}.decisions.jsonl"
 
 
-def _config_for_task(base_config: str | Path, server_spec: str | None) -> str | Path:
-    """If the task names a server_spec, write a temp condition config pointing the
-    upstream at it (replacing the ``--spec <path>`` in upstream.args); otherwise
-    use the base config unchanged. Detector block and log_dir are untouched, so
-    the condition (none/mcpguard/guardian) is preserved exactly."""
-    if not server_spec:
-        return base_config
+def _config_for_task(base_config: str | Path, server_spec: str | None) -> tuple[str | Path, str]:
+    """Return ``(config_path, upstream_name)``. If the task names a server_spec, write a
+    temp condition config whose upstream serves that spec AND whose ``upstream.name``
+    is set to the spec's own name -- so the server call log, the proxy decision log, and
+    the path ``run_task`` returns all agree on the name. The detector block and log_dir
+    are untouched, so the condition (none/mcpguard/guardian) is preserved exactly."""
     cfg = yaml.safe_load(Path(base_config).read_text(encoding="utf-8"))
-    args = list(cfg.get("upstream", {}).get("args", []))
+    if not server_spec:
+        return base_config, cfg.get("upstream", {}).get("name", "upstream")
+    spec_name = yaml.safe_load(Path(server_spec).read_text(encoding="utf-8")).get("name", "upstream")
+    up = cfg.setdefault("upstream", {})
+    args = list(up.get("args", []))
     if "--spec" in args:
         args[args.index("--spec") + 1] = server_spec
     else:
         args += ["--spec", server_spec]
-    cfg["upstream"]["args"] = args
+    up["args"] = args
+    up["name"] = spec_name  # keep the config name == the spec name the server logs under
     tmp = Path(tempfile.mkdtemp(prefix="exp3-cond-")) / "cond.yaml"
     tmp.write_text(yaml.safe_dump(cfg), encoding="utf-8")
-    return tmp
+    return tmp, spec_name
 
 
 # --- scoring one run ----------------------------------------------------------
@@ -120,11 +123,11 @@ async def run_one(task: dict, condition: str, condition_config: str | Path, tria
     """Run one (task, condition, trial) and score it. ``runner`` is the async agent
     entry point (agent.runner.run_task by default); injected in tests."""
     rid = run_id_for(task["task_id"], condition, trial)
-    cfg = _config_for_task(condition_config, task.get("server_spec"))
+    cfg, upstream_name = _config_for_task(condition_config, task.get("server_spec"))
     t0 = time.perf_counter()
     result = await runner(cfg, rid, task["prompt"], model=model)
     latency_ms = (time.perf_counter() - t0) * 1000
-    return score_run(task, result["call_log"], decisions_path_for(condition_config, rid),
+    return score_run(task, result["call_log"], decisions_path_for(condition_config, upstream_name, rid),
                      latency_ms, rid, condition, trial)
 
 

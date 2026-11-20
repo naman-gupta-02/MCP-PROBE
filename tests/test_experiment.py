@@ -102,17 +102,21 @@ def test_score_run_no_false_block_when_blocked_tool_not_clean(tmp_path):
 
 def test_config_for_task_overrides_spec(tmp_path):
     base = _write_cond(tmp_path, "none")
-    out = _config_for_task(base, "configs/servers/mail_p1.yaml")
+    spec = tmp_path / "db.yaml"
+    spec.write_text(yaml.safe_dump({"name": "ClickHouse", "tools": []}), encoding="utf-8")
+    out, name = _config_for_task(base, str(spec))
     cfg = yaml.safe_load(Path(out).read_text(encoding="utf-8"))
     args = cfg["upstream"]["args"]
-    assert args[args.index("--spec") + 1] == "configs/servers/mail_p1.yaml"
-    # no override -> same path object back
-    assert _config_for_task(base, None) == base
+    assert args[args.index("--spec") + 1] == str(spec)
+    # upstream.name is set to the spec's name so all log paths agree
+    assert name == "ClickHouse" and cfg["upstream"]["name"] == "ClickHouse"
+    # no override -> same path back, with the base config's upstream name
+    assert _config_for_task(base, None) == (base, "mail")
 
 
 def test_decisions_path_matches_proxy_convention(tmp_path):
     base = _write_cond(tmp_path, "none")
-    p = decisions_path_for(base, "run42")
+    p = decisions_path_for(base, "mail", "run42")
     assert p == tmp_path / "proxy_logs" / "run42.mail.decisions.jsonl"
 
 
