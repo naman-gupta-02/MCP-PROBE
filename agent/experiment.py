@@ -141,7 +141,17 @@ async def run_suite(tasks: list[dict], conditions: dict, trials: int, model: str
     for task in tasks:
         for condition, cfg in conditions.items():
             for trial in range(1, trials + 1):
-                records.append(await run_one(task, condition, cfg, trial, model, runner))
+                try:
+                    records.append(await run_one(task, condition, cfg, trial, model, runner))
+                except Exception as e:  # one bad run must not abort the whole suite
+                    records.append({
+                        "task_id": task.get("task_id"), "condition": condition, "trial": trial,
+                        "run_id": run_id_for(task["task_id"], condition, trial),
+                        "paradigm": task.get("paradigm"), "error": str(e)[:300],
+                        "task_success": False, "attack_success": False, "n_calls": 0,
+                        "tools_blocked": [], "false_blocked": [], "false_block": False,
+                        "latency_ms": None,
+                    })
     return records
 
 
@@ -154,14 +164,17 @@ def aggregate(records: list[dict]) -> list[dict]:
         by_cond[r["condition"]].append(r)
     rows = []
     for cond, rs in by_cond.items():
-        n = len(rs)
+        ok = [r for r in rs if not r.get("error")]  # rates are over runs that actually completed
+        n = len(ok)
+        lat = [r["latency_ms"] for r in ok if r.get("latency_ms") is not None]
         rows.append({
             "condition": cond,
-            "runs": n,
-            "attack_success_rate": sum(r["attack_success"] for r in rs) / n,
-            "task_success_rate": sum(r["task_success"] for r in rs) / n,
-            "false_block_rate": sum(r["false_block"] for r in rs) / n,
-            "mean_latency_ms": round(statistics.mean(r["latency_ms"] for r in rs), 1),
+            "runs": len(rs),
+            "errors": len(rs) - n,
+            "attack_success_rate": (sum(r["attack_success"] for r in ok) / n) if n else 0.0,
+            "task_success_rate": (sum(r["task_success"] for r in ok) / n) if n else 0.0,
+            "false_block_rate": (sum(r["false_block"] for r in ok) / n) if n else 0.0,
+            "mean_latency_ms": round(statistics.mean(lat), 1) if lat else 0.0,
         })
     order = {"none": 0, "mcpguard": 1, "guardian": 2}
     rows.sort(key=lambda r: order.get(r["condition"], 99))
@@ -174,14 +187,14 @@ def write_results(records: list[dict], summary: list[dict], out_dir: str | Path)
     (out / "per_run.jsonl").write_text(
         "\n".join(json.dumps(r) for r in records) + "\n", encoding="utf-8")
     (out / "summary.json").write_text(json.dumps(summary, indent=2) + "\n", encoding="utf-8")
-    cols = ["condition", "runs", "attack_success_rate", "task_success_rate",
+    cols = ["condition", "runs", "errors", "attack_success_rate", "task_success_rate",
             "false_block_rate", "mean_latency_ms"]
     lines = [",".join(cols)]
-    md = ["| condition | runs | attack-success | task-success | false-block | latency (ms) |",
-          "|---|---:|---:|---:|---:|---:|"]
+    md = ["| condition | runs | errors | attack-success | task-success | false-block | latency (ms) |",
+          "|---|---:|---:|---:|---:|---:|---:|"]
     for s in summary:
         lines.append(",".join(str(s[c]) for c in cols))
-        md.append(f"| {s['condition']} | {s['runs']} | {s['attack_success_rate']:.1%} | "
+        md.append(f"| {s['condition']} | {s['runs']} | {s.get('errors', 0)} | {s['attack_success_rate']:.1%} | "
                   f"{s['task_success_rate']:.1%} | {s['false_block_rate']:.1%} | {s['mean_latency_ms']:.0f} |")
     (out / "summary.csv").write_text("\n".join(lines) + "\n", encoding="utf-8")
     (out / "SUMMARY.md").write_text("# RQ3 live-pipeline results\n\n" + "\n".join(md) + "\n", encoding="utf-8")

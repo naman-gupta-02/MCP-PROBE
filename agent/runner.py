@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import re
 import sys
 import tempfile
 from contextlib import asynccontextmanager
@@ -34,23 +35,32 @@ REPO = Path(__file__).resolve().parents[1]
 DEFAULT_MODEL = "openai/gpt-oss-120b"
 
 
+def _safe_tool_name(name: str) -> str:
+    """LLM tool-calling (Groq/OpenAI) mangles characters like '-' to '_', so a tool
+    named 'list-recent-contacts' gets called as 'list_recent_contacts' and rejected.
+    Expose an underscore-safe name to the model; the real MCP name is still used to
+    invoke the tool, so the server call log keeps the original name."""
+    return re.sub(r"[^a-zA-Z0-9_]", "_", name)
+
+
 def _bridge_tool(client, mcp_tool) -> StructuredTool:
     """Wrap one proxy-exposed MCP tool as a LangChain tool the agent can call.
 
-    The LangChain tool keeps the MCP tool's name, (possibly poisoned) description
-    and input schema, and forwards calls to the proxy via the MCP client.
+    The LangChain tool keeps the MCP tool's (possibly poisoned) description and input
+    schema, exposes an LLM-safe name, and forwards calls to the proxy under the tool's
+    real MCP name via the MCP client.
     """
-    name = mcp_tool.name
+    real_name = mcp_tool.name
 
     async def _call(**kwargs):
-        res = await client.call_tool(name, kwargs)
+        res = await client.call_tool(real_name, kwargs)
         if res.structured_content is not None:
             return res.structured_content
         return "\n".join(getattr(c, "text", "") or "" for c in (res.content or []))
 
     return StructuredTool.from_function(
         coroutine=_call,
-        name=name,
+        name=_safe_tool_name(real_name),
         description=mcp_tool.description or "",
         args_schema=mcp_tool.input_schema,
         infer_schema=False,
