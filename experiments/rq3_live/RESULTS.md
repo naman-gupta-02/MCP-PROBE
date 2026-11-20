@@ -1,6 +1,6 @@
 # RQ3 results: what do the detectors actually buy a live agent?
 
-**Status:** first full run complete (2026-11-19). A LangGraph agent ran 9 tasks through the
+**Status:** first full run complete (2026-11-19). A LangGraph agent ran 12 tasks through the
 proxy under three conditions, 10 trials each (360 runs, 0 errors). Raw per-run data is under
 `results/rq3/` (gitignored); the numbers here are reproducible from it (Section 6).
 
