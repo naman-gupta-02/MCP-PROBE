@@ -27,6 +27,14 @@ length-controlled data debiases the classifier (Base E5 Full: 100% recall at 0% 
 positives). So the RQ1 numbers should be read with length controlled. See
 [clean_padding/README.md](clean_padding/README.md).
 
+## Supporting study: cross-dataset generalization
+
+RQ1's generalization is *within* MCPTox (held-out categories). As a neutral check, we run the
+MCPTox-trained detectors on **MCP-SafetyBench** (arXiv 2512.15163 `[verify]`), an independent
+benchmark, with no retraining: the learned detectors catch **95–98%** of its 96 tool-poisoning
+descriptions (Guardian 13.5%). So the high static recall is not an MCPTox artifact — it transfers
+across datasets. See [safetybench/RESULTS.md](safetybench/RESULTS.md).
+
 ## How the three fit together
 
 - **RQ1** establishes the baseline: these detectors look nearly solved.
@@ -43,5 +51,4 @@ deterministic rule over the call log). RQ3 is the one that confirms an agent is 
 ## Open items
 
 - RQ2: hand-verify a sample of the 231 "preserved" evasions (the qwen judge is a proxy).
-- Experiment 1: a neutral cross-dataset check on MCP-SafetyBench (arXiv 2512.15163 [verify]).
 - Final report + presentation stitching all of the above together.

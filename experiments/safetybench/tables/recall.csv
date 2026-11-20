@@ -1,0 +1,7 @@
+detector,blocked,total,recall
+frozen_mcpguard,94,96,0.9792
+mcpguard_full,94,96,0.9792
+mcpguard_head,94,96,0.9792
+e5base_full,91,96,0.9479
+e5base_head,92,96,0.9583
+mcp_guardian,13,96,0.1354
