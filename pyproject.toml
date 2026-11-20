@@ -7,6 +7,14 @@ requires-python = ">=3.11,<3.12"
 dependencies = [
     "pyyaml",
     "pytest",
+    # Experiment 3 (live pipeline) — pip-installed in the working .venv alongside the
+    # detector deps (torch/transformers, see detectors/mcp_guard/requirements.txt), which
+    # this project manages via pip, not uv-sync. Recorded here so they are not lost.
+    # mcp must stay 2.x: langchain-mcp-adapters pins mcp 1.x and breaks the proxy (the
+    # MCP->LangChain bridge is hand-rolled in agent/runner.py instead).
+    "mcp>=2.3",
+    "langgraph>=1.2",
+    "langchain-groq>=1.1",
 ]
 
 [tool.pytest.ini_options]
