@@ -98,16 +98,24 @@ async def proxied_tools(base_config: str | Path, run_id: str, call_log_dir: str 
         yield client, [_bridge_tool(client, t) for t in listed.tools], call_log_path
 
 
+_KEY_CYCLE = None
+
+
 def _ensure_groq_key() -> None:
-    """ChatGroq wants a single GROQ_API_KEY. Load .env and, if only the project's
-    comma-separated GROQ_API_KEYS is set, use its first key."""
+    """ChatGroq wants a single GROQ_API_KEY. Load .env and, from the project's
+    comma-separated GROQ_API_KEYS, hand out a different key on each agent build
+    (round-robin) so a long run spreads across all keys instead of exhausting one
+    key's daily cap. If only a single GROQ_API_KEY is set, leave it as-is."""
+    global _KEY_CYCLE
     from attacker.llm import load_dotenv
 
     load_dotenv()
-    if not os.environ.get("GROQ_API_KEY"):
-        keys = [k.strip() for k in os.environ.get("GROQ_API_KEYS", "").split(",") if k.strip()]
-        if keys:
-            os.environ["GROQ_API_KEY"] = keys[0]
+    keys = [k.strip() for k in os.environ.get("GROQ_API_KEYS", "").split(",") if k.strip()]
+    if keys:
+        if _KEY_CYCLE is None:
+            import itertools
+            _KEY_CYCLE = itertools.cycle(keys)
+        os.environ["GROQ_API_KEY"] = next(_KEY_CYCLE)
 
 
 def build_agent(tools, model: str = DEFAULT_MODEL, temperature: float = 0.0, system: str | None = None):

@@ -131,27 +131,49 @@ async def run_one(task: dict, condition: str, condition_config: str | Path, tria
                      latency_ms, rid, condition, trial)
 
 
+def run_key(rec: dict) -> tuple:
+    return (rec["task_id"], rec["condition"], rec["trial"])
+
+
+def _is_quota(exc: Exception) -> bool:
+    """A Groq daily/rate limit (vs an ordinary per-run failure)."""
+    s = str(exc).lower()
+    return any(t in s for t in ("rate limit", "rate_limit", "429", "too many requests",
+                                "per day", "rpd", "quota", "insufficient"))
+
+
 async def run_suite(tasks: list[dict], conditions: dict, trials: int, model: str,
-                    runner=None) -> list[dict]:
-    """Every task x condition x trial, scored. Returns the per-run records."""
+                    runner=None, done: set | None = None, on_record=None) -> list[dict]:
+    """Every task x condition x trial not already in ``done``, scored. Calls ``on_record``
+    for each new record (for incremental writing). Stops cleanly on a Groq rate/daily
+    limit so a rerun resumes; records other per-run failures and continues."""
     if runner is None:
         from agent.runner import run_task  # lazy: keeps the driver importable without mcp/langgraph
         runner = run_task
+    done = done or set()
     records = []
     for task in tasks:
         for condition, cfg in conditions.items():
             for trial in range(1, trials + 1):
+                if (task["task_id"], condition, trial) in done:
+                    continue
                 try:
-                    records.append(await run_one(task, condition, cfg, trial, model, runner))
-                except Exception as e:  # one bad run must not abort the whole suite
-                    records.append({
+                    rec = await run_one(task, condition, cfg, trial, model, runner)
+                except Exception as e:
+                    if _is_quota(e):  # clean, resumable halt -- do not burn the rest as errors
+                        print(f"stopped on a rate/daily limit after {len(records)} new runs: {str(e)[:120]}")
+                        return records
+                    rec = {  # ordinary failure: record it and keep going
                         "task_id": task.get("task_id"), "condition": condition, "trial": trial,
                         "run_id": run_id_for(task["task_id"], condition, trial),
                         "paradigm": task.get("paradigm"), "error": str(e)[:300],
                         "task_success": False, "attack_success": False, "n_calls": 0,
                         "tools_blocked": [], "false_blocked": [], "false_block": False,
                         "latency_ms": None,
-                    })
+                    }
+                records.append(rec)
+                if on_record is not None:
+                    on_record(rec)
     return records
 
 
@@ -205,6 +227,20 @@ def load_tasks(path: str | Path) -> list[dict]:
     return data["tasks"] if isinstance(data, dict) else data
 
 
+def read_jsonl(path: str | Path) -> list[dict]:
+    p = Path(path)
+    if not p.is_file():
+        return []
+    return [json.loads(ln) for ln in p.read_text(encoding="utf-8").splitlines() if ln.strip()]
+
+
+def latest_by_key(records: list[dict]) -> list[dict]:
+    """Dedupe per (task, condition, trial), last record wins (a resumed success
+    supersedes an earlier error line for the same run)."""
+    by = {run_key(r): r for r in records}
+    return list(by.values())
+
+
 def main() -> None:
     import anyio
 
@@ -220,15 +256,31 @@ def main() -> None:
     conds = DEFAULT_CONDITIONS if not args.conditions else {
         c: DEFAULT_CONDITIONS[c] for c in args.conditions}
     tasks = load_tasks(args.tasks)
-    records = anyio.run(lambda: run_suite(tasks, conds, args.trials, args.model))
-    summary = aggregate(records)
-    write_results(records, summary, args.out)
-    print(f"ran {len(records)} runs over {len(tasks)} tasks x {len(conds)} conditions x {args.trials} trials")
+
+    out = Path(args.out)
+    out.mkdir(parents=True, exist_ok=True)
+    per_run = out / "per_run.jsonl"
+    done = {run_key(r) for r in read_jsonl(per_run) if not r.get("error")}  # resume: skip completed runs
+    if done:
+        print(f"resuming: {len(done)} runs already recorded")
+
+    with per_run.open("a", encoding="utf-8") as f:
+        def on_record(rec):
+            f.write(json.dumps(rec) + "\n")
+            f.flush()
+        new = anyio.run(lambda: run_suite(tasks, conds, args.trials, args.model,
+                                          done=done, on_record=on_record))
+
+    all_records = latest_by_key(read_jsonl(per_run))  # existing + new, deduped
+    summary = aggregate(all_records)
+    write_results(all_records, summary, out)  # rewrites per_run deduped + summary files
+    total = len(tasks) * len(conds) * args.trials
+    print(f"recorded {len(all_records)}/{total} runs ({len(new)} new this pass)")
     for s in summary:
         print(f"  {s['condition']:9s} attack={s['attack_success_rate']:.0%} "
               f"task={s['task_success_rate']:.0%} false-block={s['false_block_rate']:.0%} "
-              f"latency={s['mean_latency_ms']:.0f}ms")
-    print(f"wrote {args.out}/summary.{{csv,json}}, SUMMARY.md, per_run.jsonl")
+              f"latency={s['mean_latency_ms']:.0f}ms errors={s.get('errors', 0)}")
+    print(f"wrote {out}/summary.{{csv,json}}, SUMMARY.md, per_run.jsonl")
 
 
 if __name__ == "__main__":

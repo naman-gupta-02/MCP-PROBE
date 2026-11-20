@@ -17,7 +17,9 @@ from agent.experiment import (
     _config_for_task,
     aggregate,
     decisions_path_for,
+    latest_by_key,
     run_id_for,
+    run_key,
     run_suite,
     score_run,
 )
@@ -152,3 +154,27 @@ def test_run_suite_and_aggregate(tmp_path):
     assert summ["mcpguard"]["attack_success_rate"] == 0.0 and summ["mcpguard"]["task_success_rate"] == 1.0
     # send_message blocked by mcpguard is not a clean tool -> not a false block
     assert summ["mcpguard"]["false_block_rate"] == 0.0
+
+
+def test_run_suite_resumes_and_records_incrementally(tmp_path):
+    none = _write_cond(tmp_path, "none")
+    conditions = {"none": str(none)}
+    task = {"task_id": "t1", "prompt": "p", "success_rule": {"tool": "read_message"},
+            "attack_rule": {"tool": "send_message"}, "clean_tools": []}
+    scripted = {run_id_for("t1", "none", tr): {"calls": [("read_message", {})], "decisions": {}}
+                for tr in (1, 2, 3)}
+    runner = _fake_runner(tmp_path, scripted)
+    seen = []
+    # trial 1 already done -> only trials 2 and 3 run, and on_record fires for each
+    done = {("t1", "none", 1)}
+    new = anyio.run(lambda: run_suite([task], conditions, trials=3, model="x",
+                                      runner=runner, done=done, on_record=seen.append))
+    assert [run_key(r) for r in new] == [("t1", "none", 2), ("t1", "none", 3)]
+    assert len(seen) == 2
+
+
+def test_latest_by_key_dedupes_last_wins():
+    err = {"task_id": "t", "condition": "none", "trial": 1, "error": "boom", "attack_success": False}
+    ok = {"task_id": "t", "condition": "none", "trial": 1, "attack_success": True}
+    out = latest_by_key([err, ok])
+    assert len(out) == 1 and out[0]["attack_success"] is True
