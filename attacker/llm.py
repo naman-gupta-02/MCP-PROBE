@@ -28,6 +28,12 @@ class DailyLimitReached(RuntimeError):
     """The provider refused a call because a per-day request or token limit is used up."""
 
 
+class OutputParseError(RuntimeError):
+    """Groq returned 400 output_parse_failed (a reasoning model produced no parseable
+    final message) and it did not clear on retry. A subclass of RuntimeError so the
+    runner's existing ``except RuntimeError`` skips just this one attempt, not the run."""
+
+
 @dataclass
 class ChatResult:
     text: str
@@ -87,6 +93,7 @@ class ChatClient:
         tpm: int | None = None,
         timeout_s: float = 120.0,
         max_retries: int = 10,
+        max_parse_retries: int = 3,
         extra_body: dict | None = None,
     ):
         load_dotenv()
@@ -111,6 +118,7 @@ class ChatClient:
         self.max_tokens = max_tokens
         self.timeout_s = timeout_s
         self.max_retries = max_retries
+        self.max_parse_retries = max_parse_retries
         self.extra_body = extra_body or {}
 
     @property
@@ -147,6 +155,7 @@ class ChatClient:
         est = sum(len(m["content"]) for m in messages) // 4 + body["max_tokens"]  # rough token estimate
         last = ""
         retry = 0
+        parse_fails = 0
         while True:
             budget = self.budgets[self.idx]
             budget.wait(est)
@@ -178,6 +187,18 @@ class ChatClient:
                     sleep_for = _retry_after(r, 2 ** retry)
                 elif r.status_code >= 500:
                     last, sleep_for = f"HTTP {r.status_code}", 2 ** retry
+                elif r.status_code == 400 and _is_parse_fail(r):
+                    # A reasoning model (e.g. gpt-oss) sometimes spends its whole budget in the
+                    # reasoning channel and emits no parseable final message -> Groq 400
+                    # output_parse_failed. It is probabilistic, so a retry usually succeeds; give
+                    # up on just this call after a few tries so the runner skips one attempt
+                    # instead of the stray failure aborting the whole run.
+                    budget.record(est)
+                    parse_fails += 1
+                    if parse_fails > self.max_parse_retries:
+                        raise OutputParseError(
+                            f"{self.model}: output_parse_failed {parse_fails - 1}x in a row")
+                    last, sleep_for = "output_parse_failed", min(2 ** (parse_fails - 1), 4)
                 else:
                     r.raise_for_status()
                     j = r.json()
@@ -209,6 +230,11 @@ def _is_daily(r: requests.Response) -> bool:
     """Groq names the exhausted limit in the error message, e.g. 'tokens per day (TPD)'."""
     msg = r.text.lower()
     return "per day" in msg or "(rpd)" in msg or "(tpd)" in msg
+
+
+def _is_parse_fail(r: requests.Response) -> bool:
+    """Groq's 400 for a reasoning model that produced no parseable final message."""
+    return "output_parse_failed" in r.text.lower()
 
 
 class StubLLM:

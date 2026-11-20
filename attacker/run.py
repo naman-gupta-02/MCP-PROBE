@@ -68,6 +68,9 @@ def run_trajectory(task: RewriteTask, detector, attacker, cap: int, feedback_mod
         produced = [a["description"] for a in attempts if a.get("description")]
         try:
             cand = attacker.rewrite(task, current, n, feedback, produced)  # may raise DailyLimitReached
+        except DailyLimitReached:
+            raise  # a daily-budget stop must propagate to main() for a clean, resumable halt --
+            # never swallow it into an empty trajectory marked "done" (that row would never resume)
         except RuntimeError as e:  # client gave up (e.g. persistent rate limit); don't kill the run
             attempts.append({"n": n, "feedback_sent": feedback, "description": None,
                              "error": f"client_error: {str(e)[:120]}"})
@@ -187,7 +190,7 @@ def main() -> None:
     ap.add_argument("--json-mode", action="store_true", help="ask Groq for response_format=json_object")
     ap.add_argument("--reasoning-effort", default="low", help="gpt-oss/qwen reasoning budget; 'default' to omit")
     ap.add_argument("--temperature", type=float, default=0.9)
-    ap.add_argument("--max-tokens", type=int, default=900, help="attacker completion cap (room for low reasoning + the description)")
+    ap.add_argument("--max-tokens", type=int, default=2000, help="attacker completion cap (room for low reasoning + the description)")
     ap.add_argument("--rpm", type=int, default=25, help="per-key requests/min budget (free plan ~30)")
     ap.add_argument("--tpm", type=int, default=7000, help="per-key tokens/min budget (free plan ~8000)")
     ap.add_argument("--base-url", default="https://api.groq.com/openai/v1")
